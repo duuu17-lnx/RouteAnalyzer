@@ -4,6 +4,8 @@ from app.utils.menu import Menu
 from app.utils.analysis_configurator import AnalysisConfigurator
 from app.utils.config_manager import ConfigManager
 
+from app.exporters.pdf_exporter import PDFExporter
+
 
 def main():
 
@@ -119,7 +121,30 @@ def main():
 
             elif opcao == "3":
 
-                print("\nExportação ainda não implementada.")
+                arquivo = PDFExporter().export(
+
+                    resultado=dados["resultado"],
+
+                    config=config,
+
+                    latency=dados["latency"],
+
+                    loss=dados["loss"],
+
+                    tempo=dados["tempo"],
+
+                    ips_consultados=dados["ips_consultados"]
+
+                )
+
+                print()
+
+                print("=" * 92)
+                print("Relatório exportado".center(92))
+                print("=" * 92)
+                print()
+
+                print(f"Arquivo: {arquivo}")
 
                 input("\nPressione ENTER para voltar ao menu...")
 
