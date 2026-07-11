@@ -1,18 +1,41 @@
+#
+# Ambientes virtuais
+#
+
 venv/
-build/
-dist/
+
+#
+# Python
+#
+
 __pycache__/
 *.pyc
 *.pyo
+
+#
+# Build
+#
+
+build/
+dist/
 *.spec
 
-output/
+#
+# Saídas do RouteAnalyzer
+#
 
+output/
+.last_config
+
+#
+# IDEs
+#
+
+.vscode/
 .idea/
-.vscode/
 
-*.logvenv/
-__pycache__/
-*.pyc
-output/
-.vscode/
+#
+# Logs
+#
+
+*.log
