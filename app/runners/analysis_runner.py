@@ -1,8 +1,5 @@
 import time
 
-from app.config import MTR_CICLOS
-from app.config import MTR_EXECUCOES
-
 from app.analyzers.comparison_analyzer import ComparisonAnalyzer
 from app.analyzers.engine import AnalyzerEngine
 from app.analyzers.intermittency_analyzer import IntermittencyAnalyzer
@@ -16,10 +13,13 @@ from app.collectors.collector_factory import CollectorFactory
 
 from app.models.multi_trace_result import MultiTraceResult
 
+from app.utils.progress import Progress
+from app.utils.processing import Processing
+
 
 class AnalysisRunner:
 
-    def run(self, destino):
+    def run(self, destino, config):
 
         inicio = time.perf_counter()
 
@@ -35,17 +35,23 @@ class AnalysisRunner:
 
         collector = CollectorFactory().get()
 
+        progress = Progress()
+
+        processing = Processing()
+
         multi = MultiTraceResult()
 
-        print()
+        for i in range(config.execucoes):
 
-        for i in range(MTR_EXECUCOES):
+            progress.show(
 
-            print(
+                atual=i + 1,
 
-                f"Executando coleta {i + 1}/{MTR_EXECUCOES} "
+                total=config.execucoes,
 
-                f"({MTR_CICLOS} ciclos)..."
+                destino=destino,
+
+                config=config
 
             )
 
@@ -53,7 +59,7 @@ class AnalysisRunner:
 
                 destino,
 
-                ciclos=MTR_CICLOS
+                ciclos=config.ciclos
 
             )
 
@@ -61,11 +67,23 @@ class AnalysisRunner:
 
         print()
 
+        print("✓ Coleta concluída com sucesso.")
+
+        processing.start()
+
+        processing.step("Comparando execuções")
+
         resultado = ComparisonAnalyzer().analyze(multi)
+
+        processing.step("Analisando comportamento da rede")
 
         NetworkBehaviorAnalyzer().analyze(resultado)
 
+        processing.step("Detectando intermitência")
+
         IntermittencyAnalyzer().analyze(resultado)
+
+        processing.step("Identificando ASN do destino")
 
         resultado.destino = destino
 
@@ -83,11 +101,21 @@ class AnalysisRunner:
 
             resultado.destino_prefixo = asn["prefix"]
 
+        processing.step("Calculando latência")
+
         latency = LatencyAnalyzer().analyze(resultado)
+
+        processing.step("Calculando perda de pacotes")
 
         loss = LossAnalyzer().analyze(resultado)
 
+        processing.step("Gerando diagnóstico")
+
         resultado.diagnosticos = AnalyzerEngine().analyze(resultado)
+
+        processing.step("Finalizando relatório")
+
+        processing.finish()
 
         tempo = time.perf_counter() - inicio
 
@@ -101,7 +129,7 @@ class AnalysisRunner:
 
             "tempo": tempo,
 
-            "quantidade_mtr": MTR_EXECUCOES,
+            "quantidade_mtr": config.execucoes,
 
             "ips_consultados": ASNCollector.cache_size()
 

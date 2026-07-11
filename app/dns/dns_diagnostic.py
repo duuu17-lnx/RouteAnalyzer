@@ -7,7 +7,7 @@ from rich.progress import SpinnerColumn
 from rich.progress import TextColumn
 
 from app.dns.dns_database import DNS_DATABASE
-from app.dns.dns_collector import DNSCollector
+from app.dns.dns_collector_factory import DNSCollectorFactory
 from app.dns.dns_analyzer import DNSAnalyzer
 from app.dns.dns_table import DNSTable
 
@@ -51,7 +51,7 @@ class DNSDiagnostic:
 
         print()
 
-        collector = DNSCollector()
+        collector = DNSCollectorFactory().get()
 
         resultados = []
 

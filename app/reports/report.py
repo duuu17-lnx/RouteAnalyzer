@@ -7,7 +7,7 @@ class Report:
     def show(
         self,
         resultado,
-        quantidade_mtr,
+        config,
         latency,
         loss,
         tempo,
@@ -19,35 +19,60 @@ class Report:
         mostrar_hops(resultado.hops)
 
         self._mostrar_resumo(
+
             resultado,
-            quantidade_mtr,
+
+            config,
+
             latency,
+
             loss
+
         )
 
         self._mostrar_conclusao(
+
             resultado,
-            quantidade_mtr
+
+            config
+
         )
 
         self._mostrar_estatisticas(
-            quantidade_mtr,
+
+            config,
+
             ips_consultados,
+
             tempo
+
         )
 
     def _mostrar_resumo(
+
         self,
+
         resultado,
-        quantidade_mtr,
+
+        config,
+
         latency,
+
         loss
+
     ):
 
         print("\nResumo")
         print("-" * 92)
 
-        print(f"✓ MTR Executados....: {quantidade_mtr}")
+        print(f"✓ Perfil............: {config.perfil}")
+        print(f"✓ Execuções.........: {config.execucoes}")
+        print(f"✓ Ciclos............: {config.ciclos}")
+        print(
+            f"✓ Amostras/Hop......: "
+            f"{config.execucoes * config.ciclos}"
+        )
+
         print(f"✓ Hops..............: {len(resultado.hops)}")
         print(f"✓ RTT Final.........: {resultado.hops[-1].avg:.2f} ms")
         print(f"✓ Perda Final.......: {resultado.hops[-1].loss:.1f}%")
@@ -55,7 +80,8 @@ class Report:
         if latency["hop"]:
 
             print(
-                f"✓ Maior Δ RTT.......: +{latency['maior_delta']:.2f} ms "
+                f"✓ Maior Δ RTT.......: "
+                f"+{latency['maior_delta']:.2f} ms "
                 f"(Hop {latency['hop'].numero})"
             )
 
@@ -72,7 +98,8 @@ class Report:
             )
 
             print(
-                f"✓ Perda persistente.: {'Sim' if loss['persistente'] else 'Não'}"
+                f"✓ Perda persistente.: "
+                f"{'Sim' if loss['persistente'] else 'Não'}"
             )
 
         if resultado.intermitencia:
@@ -80,11 +107,13 @@ class Report:
             print("✓ Intermitência.....: Detectada")
 
             print(
-                f"✓ Hop mais instável.: {resultado.hop_mais_instavel}"
+                f"✓ Hop mais instável.: "
+                f"{resultado.hop_mais_instavel}"
             )
 
             print(
-                f"✓ Maior variação....: {resultado.maior_variacao:.2f} ms"
+                f"✓ Maior variação....: "
+                f"{resultado.maior_variacao:.2f} ms"
             )
 
         else:
@@ -92,9 +121,13 @@ class Report:
             print("✓ Intermitência.....: Não detectada")
 
     def _mostrar_conclusao(
+
         self,
+
         resultado,
-        quantidade_mtr
+
+        config
+
     ):
 
         print()
@@ -103,7 +136,15 @@ class Report:
         print("-" * 92)
 
         print(
-            f"• A análise foi baseada em {quantidade_mtr} execuções independentes do MTR."
+
+            f"• A análise foi baseada em "
+
+            f"{config.execucoes} execuções "
+
+            f"independentes de "
+
+            f"{config.ciclos} ciclos."
+
         )
 
         for item in resultado.diagnosticos:
@@ -113,23 +154,39 @@ class Report:
         if resultado.intermitencia:
 
             print(
-                f"• Foi detectada intermitência no hop "
+
+                f"• Foi detectada intermitência "
+
+                f"no hop "
+
                 f"{resultado.hop_mais_instavel}, "
+
                 f"com variação máxima de "
-                f"{resultado.maior_variacao:.2f} ms entre as medições."
+
+                f"{resultado.maior_variacao:.2f} ms."
+
             )
 
         else:
 
             print(
-                "• As três execuções apresentaram comportamento consistente."
+
+                f"• As {config.execucoes} execuções "
+
+                f"apresentaram comportamento consistente."
+
             )
 
     def _mostrar_estatisticas(
+
         self,
-        quantidade_mtr,
+
+        config,
+
         ips_consultados,
+
         tempo
+
     ):
 
         print()
@@ -137,6 +194,13 @@ class Report:
         print("Estatísticas")
         print("-" * 92)
 
-        print(f"✓ MTR executados....: {quantidade_mtr}")
+        print(f"✓ Perfil............: {config.perfil}")
+        print(f"✓ Execuções.........: {config.execucoes}")
+        print(f"✓ Ciclos............: {config.ciclos}")
+        print(
+            f"✓ Amostras/Hop......: "
+            f"{config.execucoes * config.ciclos}"
+        )
+
         print(f"✓ IPs consultados...: {ips_consultados}")
         print(f"✓ Tempo total.......: {tempo:.2f} s")

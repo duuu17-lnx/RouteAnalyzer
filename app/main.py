@@ -1,6 +1,8 @@
 from app.runners.analysis_runner import AnalysisRunner
 from app.reports.report import Report
 from app.utils.menu import Menu
+from app.utils.analysis_configurator import AnalysisConfigurator
+from app.utils.config_manager import ConfigManager
 
 
 def main():
@@ -11,13 +13,55 @@ def main():
 
     menu = Menu()
 
+    configurator = AnalysisConfigurator()
+
+    config_manager = ConfigManager()
+
     while True:
 
-        print("\nExecutando análise...\n")
+        print()
 
         destino = input("Destino: ").strip()
 
-        dados = runner.run(destino)
+        if not destino:
+
+            print("\nDestino inválido.\n")
+
+            continue
+
+        print()
+
+        #
+        # Última configuração utilizada
+        #
+
+        config = config_manager.load()
+
+        if config:
+
+            usar = config_manager.ask(config)
+
+            if not usar:
+
+                config = configurator.configure()
+
+                config_manager.save(config)
+
+        else:
+
+            config = configurator.configure()
+
+            config_manager.save(config)
+
+        print("\nExecutando análise...\n")
+
+        dados = runner.run(
+
+            destino,
+
+            config
+
+        )
 
         if dados is None:
 
@@ -29,7 +73,7 @@ def main():
 
             resultado=dados["resultado"],
 
-            quantidade_mtr=dados["quantidade_mtr"],
+            config=config,
 
             latency=dados["latency"],
 
@@ -65,17 +109,9 @@ def main():
 
             elif opcao == "2":
 
-                try:
+                from app.dns.dns_diagnostic import DNSDiagnostic
 
-                    from app.dns.dns_diagnostic import DNSDiagnostic
-
-                    DNSDiagnostic().execute()
-
-                except ImportError:
-
-                    print("\nDiagnóstico DNS ainda não implementado.")
-
-                input("\nPressione ENTER para voltar ao menu...")
+                DNSDiagnostic().execute()
 
             #
             # Exportação
@@ -106,4 +142,15 @@ def main():
 
 if __name__ == "__main__":
 
-    main()
+    try:
+
+        main()
+
+    except KeyboardInterrupt:
+
+        print()
+
+        print("=" * 92)
+        print("Coleta cancelada pelo usuário.".center(92))
+        print("=" * 92)
+        print()
