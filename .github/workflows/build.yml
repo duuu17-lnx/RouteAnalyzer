@@ -71,13 +71,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build Windows
-        run: |
-          pyinstaller ^
-            --clean ^
-            --onefile ^
-            --name RouteAnalyzer ^
-            --paths . ^
-            app/main.py
+        run: pyinstaller --clean --onefile --name RouteAnalyzer --paths . app/main.py
 
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
