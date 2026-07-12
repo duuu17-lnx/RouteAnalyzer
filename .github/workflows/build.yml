@@ -11,7 +11,7 @@ jobs:
 
   build-linux:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
 
@@ -27,11 +27,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: |
           pip install pyinstaller
 
       - name: Build Linux
         run: |
           pyinstaller \
+            --clean \
             --onefile \
             --name RouteAnalyzer \
             --paths . \
@@ -43,10 +47,9 @@ jobs:
           name: RouteAnalyzer-Linux
           path: dist/RouteAnalyzer
 
-
   build-windows:
 
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
 
@@ -62,11 +65,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: |
           pip install pyinstaller
 
       - name: Build Windows
         run: |
-          pyinstaller --onefile --name RouteAnalyzer --paths . app/main.py
+          pyinstaller ^
+            --clean ^
+            --onefile ^
+            --name RouteAnalyzer ^
+            --paths . ^
+            app/main.py
 
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
