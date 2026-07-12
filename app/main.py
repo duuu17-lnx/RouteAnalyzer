@@ -4,8 +4,6 @@ from app.utils.menu import Menu
 from app.utils.analysis_configurator import AnalysisConfigurator
 from app.utils.config_manager import ConfigManager
 
-from app.exporters.pdf_exporter import PDFExporter
-
 
 def main():
 
@@ -121,6 +119,8 @@ def main():
 
             elif opcao == "3":
 
+                from app.exporters.pdf_exporter import PDFExporter
+
                 arquivo = PDFExporter().export(
 
                     resultado=dados["resultado"],
@@ -179,3 +179,20 @@ if __name__ == "__main__":
         print("Coleta cancelada pelo usuário.".center(92))
         print("=" * 92)
         print()
+
+    except Exception:
+
+        import traceback
+
+        print()
+
+        print("=" * 92)
+        print("ERRO INESPERADO".center(92))
+        print("=" * 92)
+        print()
+
+        traceback.print_exc()
+
+        print()
+
+        input("Pressione ENTER para encerrar...")
