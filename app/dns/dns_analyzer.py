@@ -71,7 +71,7 @@ class DNSAnalyzer:
             return conclusoes
 
         #
-        # Classifica desempenho
+        # Classificação apenas informativa
         #
 
         for dns in resultados:
@@ -80,17 +80,29 @@ class DNSAnalyzer:
 
                 continue
 
-            if dns.tempo <= 30:
+            if dns.tempo <= 10:
 
-                dns.status = "OK"
+                dns.status = "Excelente"
+
+            elif dns.tempo <= 25:
+
+                dns.status = "Muito Bom"
+
+            elif dns.tempo <= 50:
+
+                dns.status = "Bom"
 
             elif dns.tempo <= 100:
 
-                dns.status = "Lento"
+                dns.status = "Normal"
+
+            elif dns.tempo <= 300:
+
+                dns.status = "Elevado"
 
             else:
 
-                dns.status = "Muito Lento"
+                dns.status = "Muito Elevado"
 
         #
         # Separa grupos
@@ -125,25 +137,7 @@ class DNSAnalyzer:
         ]
 
         #
-        # Todos OK
-        #
-
-        if all(
-
-            d.status == "OK"
-
-            for d in resultados
-
-        ):
-
-            conclusoes.append(
-
-                "Todos os resolvedores responderam normalmente."
-
-            )
-
-        #
-        # DNS Local
+        # DNS local
         #
 
         if local:
@@ -160,59 +154,15 @@ class DNSAnalyzer:
 
             ):
 
-                if all(
-
-                    d.status == "OK"
-
-                    for d in internos + publicos
-
-                ):
-
-                    conclusoes.append(
-
-                        "O resolvedor configurado localmente apresentou falha."
-
-                    )
-
-                    conclusoes.append(
-
-                        "Os demais resolvedores responderam normalmente."
-
-                    )
-
-                    conclusoes.append(
-
-                        "Há indícios de problema na configuração DNS desta estação."
-
-                    )
-
-            elif local.status in (
-
-                "Lento",
-
-                "Muito Lento"
-
-            ):
-
                 conclusoes.append(
 
-                    "O resolvedor configurado localmente apresentou tempo de resposta elevado."
+                    "O resolvedor configurado localmente não respondeu corretamente."
 
                 )
 
         #
-        # Internos
+        # Falhas em resolvedores internos
         #
-
-        internos_ok = [
-
-            d
-
-            for d in internos
-
-            if d.status == "OK"
-
-        ]
 
         internos_falha = [
 
@@ -220,45 +170,27 @@ class DNSAnalyzer:
 
             for d in internos
 
-            if d.status not in (
+            if d.status in (
 
-                "OK",
+                "Timeout",
 
-                "Lento",
+                "Erro",
 
-                "Muito Lento"
+                "SERVFAIL",
+
+                "REFUSED"
 
             )
 
         ]
 
-        if len(internos_falha) == len(internos):
+        if len(internos_falha) == len(internos) and internos:
 
             conclusoes.append(
 
                 "Nenhum resolvedor interno respondeu corretamente."
 
             )
-
-            if all(
-
-                d.status == "OK"
-
-                for d in publicos
-
-            ):
-
-                conclusoes.append(
-
-                    "Todos os resolvedores públicos responderam normalmente."
-
-                )
-
-                conclusoes.append(
-
-                    "Há fortes indícios de indisponibilidade da infraestrutura DNS interna."
-
-                )
 
         elif len(internos_falha) == 1:
 
@@ -277,7 +209,7 @@ class DNSAnalyzer:
             )
 
         #
-        # Públicos
+        # Falhas em resolvedores públicos
         #
 
         publicos_falha = [
@@ -286,13 +218,15 @@ class DNSAnalyzer:
 
             for d in publicos
 
-            if d.status not in (
+            if d.status in (
 
-                "OK",
+                "Timeout",
 
-                "Lento",
+                "Erro",
 
-                "Muito Lento"
+                "SERVFAIL",
+
+                "REFUSED"
 
             )
 
@@ -307,38 +241,64 @@ class DNSAnalyzer:
             )
 
         #
-        # Lentidão
+        # Tempos muito elevados
         #
 
-        lentos = [
+        elevados = [
 
             d
 
             for d in resultados
 
-            if d.status in (
-
-                "Lento",
-
-                "Muito Lento"
-
-            )
+            if d.status == "Muito Elevado"
 
         ]
 
-        if lentos:
+        if elevados:
 
             nomes = ", ".join(
 
                 d.nome
 
-                for d in lentos
+                for d in elevados
 
             )
 
             conclusoes.append(
 
-                f"Resolvedores com tempo elevado: {nomes}."
+                f"Resolvedores com tempo de resolução muito elevado: {nomes}."
+
+            )
+
+        #
+        # Todos responderam corretamente
+        #
+
+        if all(
+
+            d.status in (
+
+                "Excelente",
+
+                "Muito Bom",
+
+                "Bom",
+
+                "Normal",
+
+                "Elevado",
+
+                "Muito Elevado"
+
+            )
+
+            for d in resultados
+
+        ):
+
+            conclusoes.append(
+
+                "Todos os resolvedores responderam corretamente às consultas DNS."
 
             )
 
@@ -374,9 +334,19 @@ class DNSAnalyzer:
 
             conclusoes.append(
 
-                "Esse comportamento pode ser esperado em serviços com CDN ou balanceamento geográfico."
+                "Esse comportamento é esperado em serviços que utilizam CDN ou balanceamento geográfico."
 
             )
+
+        #
+        # Observação educativa
+        #
+
+        conclusoes.append(
+
+            "O tempo de resolução DNS representa apenas o tempo necessário para traduzir um nome de domínio em endereço IP. Tempos mais elevados não indicam, por si só, problemas de desempenho da conexão."
+
+        )
 
         #
         # Nenhuma conclusão

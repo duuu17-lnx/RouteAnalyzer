@@ -19,15 +19,23 @@ class DNSTable:
 
         for dns in resultados:
 
-            if dns.status == "OK":
+            if dns.status == "Excelente":
 
                 cor = "green"
 
-            elif dns.status == "Lento":
+            elif dns.status == "Muito Bom":
+
+                cor = "bright_green"
+
+            elif dns.status == "Bom":
+
+                cor = "cyan"
+
+            elif dns.status == "Normal":
 
                 cor = "yellow"
 
-            elif dns.status == "Muito Lento":
+            elif dns.status == "Elevado":
 
                 cor = "bright_yellow"
 

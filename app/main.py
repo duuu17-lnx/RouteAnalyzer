@@ -21,7 +21,15 @@ def main():
 
         print()
 
-        destino = input("Destino: ").strip()
+        print("=" * 92)
+        print("RouteAnalyzer".center(92))
+        print("=" * 92)
+        print()
+
+        print("Insira o destino da análise (IPv4 /32 ou domínio):")
+        print()
+
+        destino = input("> ").strip()
 
         if not destino:
 
@@ -154,7 +162,7 @@ def main():
 
             elif opcao == "0":
 
-                print("\nEncerrando RouteAnalyzer...\n")
+                print("\nEncerrando o RouteAnalyzer...\n")
 
                 return
 
@@ -176,7 +184,7 @@ if __name__ == "__main__":
         print()
 
         print("=" * 92)
-        print("Coleta cancelada pelo usuário.".center(92))
+        print("Investigação cancelada pelo usuário.".center(92))
         print("=" * 92)
         print()
 

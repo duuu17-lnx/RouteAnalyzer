@@ -4,7 +4,13 @@ import subprocess
 
 class WindowsTracert:
 
-    def run(self, destino):
+    def run(
+
+        self,
+
+        destino
+
+    ):
 
         comando = [
 
@@ -12,15 +18,21 @@ class WindowsTracert:
 
             "-d",
 
+            "-w",
+
+            "1000",
+
             destino
 
         ]
 
-        resultado = subprocess.run(
+        processo = subprocess.Popen(
 
             comando,
 
-            capture_output=True,
+            stdout=subprocess.PIPE,
+
+            stderr=subprocess.PIPE,
 
             text=True,
 
@@ -30,138 +42,252 @@ class WindowsTracert:
 
         )
 
-        if resultado.returncode != 0:
-
-            raise RuntimeError(resultado.stderr)
-
         hops = []
 
-        for linha in resultado.stdout.splitlines():
+        debug = []
 
-            linha = linha.strip()
+        try:
 
-            #
-            # Apenas linhas iniciadas pelo número do hop
-            #
+            while True:
 
-            if not re.match(r"^\d+", linha):
+                linha = processo.stdout.readline()
 
-                continue
+                if not linha:
 
-            #
-            # Extrai o número do hop
-            #
+                    break
 
-            numero = int(
-
-                re.match(
-
-                    r"^(\d+)",
+                debug.append(
 
                     linha
 
-                ).group(1)
+                )
 
-            )
+                hop = self._parse_hop(
 
-            #
-            # Extrai o IP
-            #
-
-            ips = re.findall(
-
-                r"(?:\d{1,3}\.){3}\d{1,3}",
-
-                linha
-
-            )
-
-            if not ips:
-
-                continue
-
-            ip = ips[-1]
-
-            #
-            # Extrai os três tempos
-            #
-
-            tempos = []
-
-            for tempo in re.findall(
-
-                r"(<\d+|\d+)\s*ms",
-
-                linha,
-
-                flags=re.IGNORECASE
-
-            ):
-
-                if tempo.startswith("<"):
-
-                    tempos.append(0.5)
-
-                else:
-
-                    tempos.append(float(tempo))
-
-            #
-            # Perda baseada no tracert
-            #
-
-            perdas = linha.count("*")
-
-            loss = round(
-
-                perdas / 3 * 100,
-
-                1
-
-            )
-
-            #
-            # Se todos foram perdidos
-            #
-
-            if not tempos:
-
-                avg = 0.0
-                best = 0.0
-                worst = 0.0
-
-            else:
-
-                avg = round(
-
-                    sum(tempos) / len(tempos),
-
-                    2
+                    linha
 
                 )
 
-                best = min(tempos)
+                if hop is None:
 
-                worst = max(tempos)
+                    continue
 
-            hops.append(
+                hops.append(
 
-                {
+                    hop
 
-                    "numero": numero,
+                )
 
-                    "ip": ip,
+                if hop["ip"] == destino:
 
-                    "loss": loss,
+                    processo.terminate()
 
-                    "avg": avg,
+                    break
 
-                    "best": best,
+        finally:
 
-                    "worst": worst
+            try:
 
-                }
+                processo.wait(
+
+                    timeout=2
+
+                )
+
+            except subprocess.TimeoutExpired:
+
+                processo.kill()
+
+            with open(
+
+                "tracert_debug.txt",
+
+                "w",
+
+                encoding="utf-8"
+
+            ) as arquivo:
+
+                arquivo.writelines(
+
+                    debug
+
+                )
+
+        if not hops:
+
+            raise RuntimeError(
+
+                "Não foi possível descobrir a rota."
 
             )
 
         return hops
+
+
+    def _parse_hop(
+
+        self,
+
+        linha
+
+    ):
+
+        linha = linha.strip()
+
+        if not linha:
+
+            return None
+
+        if not re.match(
+
+            r"^\d+",
+
+            linha
+
+        ):
+
+            return None
+
+        numero = int(
+
+            re.match(
+
+                r"^(\d+)",
+
+                linha
+
+            ).group(1)
+
+        )
+
+        ips = re.findall(
+
+            r"(?:\d{1,3}\.){3}\d{1,3}",
+
+            linha
+
+        )
+
+        #
+        # Hop sem resposta
+        #
+
+        if not ips:
+
+            return {
+
+                "numero": numero,
+
+                "ip": None,
+
+                "loss": 100.0,
+
+                "avg": 0.0,
+
+                "best": 0.0,
+
+                "worst": 0.0
+
+            }
+
+        ip = ips[-1]
+                #
+        # Tempos retornados pelo tracert
+        #
+
+        tempos = []
+
+        for tempo in re.findall(
+
+            r"(<\d+|\d+)\s*ms",
+
+            linha,
+
+            flags=re.IGNORECASE
+
+        ):
+
+            if tempo.startswith("<"):
+
+                tempos.append(
+
+                    0.5
+
+                )
+
+            else:
+
+                tempos.append(
+
+                    float(
+
+                        tempo
+
+                    )
+
+                )
+
+        #
+        # Perda observada pelo tracert
+        #
+
+        perdas = linha.count("*")
+
+        loss = round(
+
+            perdas / 3 * 100,
+
+            1
+
+        )
+
+        #
+        # Estatísticas do RTT do tracert
+        #
+
+        if tempos:
+
+            avg = round(
+
+                sum(tempos) / len(tempos),
+
+                2
+
+            )
+
+            best = min(
+
+                tempos
+
+            )
+
+            worst = max(
+
+                tempos
+
+            )
+
+        else:
+
+            avg = 0.0
+
+            best = 0.0
+
+            worst = 0.0
+
+        return {
+
+            "numero": numero,
+
+            "ip": ip,
+
+            "loss": loss,
+
+            "avg": avg,
+
+            "best": best,
+
+            "worst": worst
+
+        }

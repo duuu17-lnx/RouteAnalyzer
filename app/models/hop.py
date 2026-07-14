@@ -58,6 +58,8 @@ class Hop:
 
     delta_rtt: float = 0.0
 
+    tracert_avg: float = 0.0
+
     loss: float = 0.0
 
     sent: int = 0

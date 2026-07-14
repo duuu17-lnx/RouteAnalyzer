@@ -1,8 +1,17 @@
 from app.utils.location_database import LOCATION_DATABASE
 
+
 class LocationAnalyzer:
 
     def classify(self, hop):
+
+        #
+        # Hop sem hostname/IP (***)
+        #
+
+        if not hop.host:
+
+            return ""
 
         host = hop.host.lower()
 

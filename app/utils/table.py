@@ -22,12 +22,20 @@ def mostrar_hops(hops):
 
     for hop in hops:
 
+        #
+        # Cor da perda
+        #
+
         if hop.loss == 0:
             cor_loss = "green"
         elif hop.loss <= 5:
             cor_loss = "yellow"
         else:
             cor_loss = "red"
+
+        #
+        # Cor do RTT médio
+        #
 
         if hop.avg < 20:
             cor_avg = "green"
@@ -36,25 +44,90 @@ def mostrar_hops(hops):
         else:
             cor_avg = "red"
 
-        if hop.delta_rtt == 0:
+        #
+        # Δ RTT
+        #
+
+        if (
+
+            hop.host in (None, "")
+
+            or
+
+            hop.delta_rtt is None
+
+        ):
+
             delta = "--"
+
         else:
-            delta = f"{hop.delta_rtt:+.2f}"
+
+            valor = abs(hop.delta_rtt)
+
+            if valor < 5:
+
+                cor_delta = "green"
+
+            elif valor < 15:
+
+                cor_delta = "yellow"
+
+            else:
+
+                cor_delta = "red"
+
+            delta = (
+
+                f"[{cor_delta}]"
+
+                f"{hop.delta_rtt:+.2f}"
+
+                f"[/{cor_delta}]"
+
+            )
+
+        #
+        # ASN
+        #
 
         if hop.asn:
+
             asn = f"{hop.asn}\n{hop.empresa}"
+
         else:
+
             asn = "-"
 
         tabela.add_row(
+
             str(hop.numero),
-            hop.host,
+
+            hop.host if hop.host else "",
+
             f"[{cor_loss}]{hop.loss:.1f}%[/{cor_loss}]",
+
             f"[{cor_avg}]{hop.avg:.2f}[/{cor_avg}]",
+
             delta,
+
             asn,
+
             hop.evento,
+
             hop.observacao
+
         )
 
     console.print(tabela)
+
+    print()
+
+    print("Observação")
+
+    print("-" * 92)
+
+    print("• Avg: latência média obtida pelo Ping.")
+
+    print("• Δ RTT: calculado utilizando os tempos observados pelo Tracert.")
+
+    print()

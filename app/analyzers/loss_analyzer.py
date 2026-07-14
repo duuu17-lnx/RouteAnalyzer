@@ -22,6 +22,7 @@ class LossAnalyzer:
             if hop.loss > 0:
 
                 primeiro_hop = hop
+
                 break
 
         #
@@ -31,21 +32,41 @@ class LossAnalyzer:
         if primeiro_hop is None:
 
             return {
+
                 "hop": None,
+
                 "persistente": False
+
             }
 
         #
-        # Verifica se a perda chegou ao destino
+        # Verifica se o destino realmente respondeu
         #
 
-        if trace.hops[-1].perda_real:
+        if trace.hops:
 
-            if trace.hops[-1].loss >= primeiro_hop.loss:
+            ultimo_hop = trace.hops[-1]
+
+            if (
+
+                ultimo_hop.host == trace.destino
+
+                and
+
+                ultimo_hop.perda_real
+
+                and
+
+                ultimo_hop.loss >= primeiro_hop.loss
+
+            ):
 
                 persistente = True
 
         return {
+
             "hop": primeiro_hop,
+
             "persistente": persistente
+
         }

@@ -28,6 +28,20 @@ output/
 .last_config
 
 #
+# Logs
+#
+
+*.log
+tracert_debug.txt
+
+#
+# Arquivos temporários do Windows
+#
+
+Thumbs.db
+Desktop.ini
+
+#
 # IDEs
 #
 
@@ -35,7 +49,8 @@ output/
 .idea/
 
 #
-# Logs
+# Arquivos do GitHub (opcional)
 #
 
-*.log
+*.bak
+*.tmp

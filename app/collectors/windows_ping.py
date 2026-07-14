@@ -5,7 +5,15 @@ import subprocess
 
 class WindowsPing:
 
-    def run(self, host: str, pacotes: int = 80):
+    def run(
+
+        self,
+
+        host: str,
+
+        pacotes: int = 80
+
+    ):
 
         comando = [
 
@@ -15,11 +23,15 @@ class WindowsPing:
 
             str(pacotes),
 
+            "-w",
+
+            "1000",
+
             host
 
         ]
 
-        resultado = subprocess.run(
+        processo = subprocess.run(
 
             comando,
 
@@ -33,57 +45,76 @@ class WindowsPing:
 
         )
 
-        if resultado.returncode != 0:
+        saida = processo.stdout
 
-            return {
+        enviados = pacotes
 
-                "loss": 100.0,
-
-                "sent": pacotes,
-
-                "received": 0,
-
-                "last": 0.0,
-
-                "avg": 0.0,
-
-                "best": 0.0,
-
-                "worst": 0.0,
-
-                "stdev": 0.0
-
-            }
-
-        saida = resultado.stdout
-
-        #
-        # Todos os tempos individuais
-        #
+        recebidos = 0
 
         tempos = []
 
-        for tempo in re.findall(
-
-            r"tempo[=<]\s*(\d+)ms",
-
-            saida,
-
-            flags=re.IGNORECASE
-
-        ):
-
-            tempos.append(float(tempo))
+        ultimo = 0.0
 
         #
-        # Perda
+        # Extrai todos os tempos das respostas
         #
 
-        perda = 100.0
+        for linha in saida.splitlines():
+
+            match = re.search(
+
+                r"tempo[=<]\s*(\d+)\s*ms",
+
+                linha,
+
+                re.IGNORECASE
+
+            )
+
+            if not match:
+
+                match = re.search(
+
+                    r"time[=<]\s*(\d+)\s*ms",
+
+                    linha,
+
+                    re.IGNORECASE
+
+                )
+
+            if match:
+
+                valor = float(
+
+                    match.group(1)
+
+                )
+
+                tempos.append(
+
+                    valor
+
+                )
+
+                ultimo = valor
+
+                recebidos += 1
+
+        #
+        # Perda de pacotes
+        #
+
+        loss = 100.0
+
+        #
+        # Windows em português:
+        # Pacotes: Enviados = X, Recebidos = Y, Perdidos = Z (0% de perda)
+        #
 
         match = re.search(
 
-            r"Perdidos = \d+ \((\d+)%",
+            r"Perdidos\s*=\s*\d+\s*\((\d+)%",
 
             saida,
 
@@ -91,23 +122,42 @@ class WindowsPing:
 
         )
 
+        #
+        # Windows em inglês:
+        # Lost = Z (0% loss)
+        #
+
+        if not match:
+
+            match = re.search(
+
+                r"Lost\s*=\s*\d+\s*\((\d+)%",
+
+                saida,
+
+                flags=re.IGNORECASE
+
+            )
+
         if match:
 
-            perda = float(match.group(1))
+            loss = float(match.group(1))
 
         #
-        # Sem respostas
+        # Nenhuma resposta
         #
 
         if not tempos:
 
+            print(f"[PING] {host} | SEM RESPOSTA")
+
             return {
 
-                "loss": perda,
+                "loss": loss,
 
-                "sent": pacotes,
+                "sent": enviados,
 
-                "received": 0,
+                "received": recebidos,
 
                 "last": 0.0,
 
@@ -125,33 +175,21 @@ class WindowsPing:
         # Estatísticas
         #
 
-        media = round(
+        best = min(
 
-            statistics.mean(tempos),
-
-            2
+            tempos
 
         )
 
-        minimo = round(
+        worst = max(
 
-            min(tempos),
-
-            2
+            tempos
 
         )
 
-        maximo = round(
+        avg = round(
 
-            max(tempos),
-
-            2
-
-        )
-
-        ultimo = round(
-
-            tempos[-1],
+            sum(tempos) / len(tempos),
 
             2
 
@@ -159,9 +197,13 @@ class WindowsPing:
 
         if len(tempos) > 1:
 
-            desvio = round(
+            stdev = round(
 
-                statistics.stdev(tempos),
+                statistics.pstdev(
+
+                    tempos
+
+                ),
 
                 2
 
@@ -169,24 +211,25 @@ class WindowsPing:
 
         else:
 
-            desvio = 0.0
+            stdev = 0.0
+
 
         return {
 
-            "loss": perda,
+            "loss": loss,
 
-            "sent": pacotes,
+            "sent": enviados,
 
-            "received": len(tempos),
+            "received": recebidos,
 
             "last": ultimo,
 
-            "avg": media,
+            "avg": avg,
 
-            "best": minimo,
+            "best": best,
 
-            "worst": maximo,
+            "worst": worst,
 
-            "stdev": desvio
+            "stdev": stdev
 
         }

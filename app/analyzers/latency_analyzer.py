@@ -2,43 +2,47 @@ class LatencyAnalyzer:
 
     def analyze(self, trace):
 
-        maior_delta = 0.0
+        maior_delta = None
         hop_maior_delta = None
 
         for indice, hop in enumerate(trace.hops):
 
             #
-            # Ignora hops classificados como ICMP Filtrado
+            # Ignora o primeiro hop (gateway)
             #
 
-            if hop.icmp_filtrado:
+            if indice == 0:
                 continue
 
             #
-            # Ignora o hop imediatamente após um ICMP Filtrado,
-            # pois o RTT costuma ficar artificialmente distorcido.
-            #
-
-            if indice > 0:
-
-                if trace.hops[indice - 1].icmp_filtrado:
-                    continue
-
-            #
-            # Ignora o destino.
+            # Ignora o destino
             #
 
             if indice == len(trace.hops) - 1:
                 continue
 
-            if hop.delta_rtt > maior_delta:
+            #
+            # Ignora hops sem resposta
+            #
+
+            if hop.host is None:
+                continue
+
+            #
+            # Ignora RTT inválido
+            #
+
+            if hop.avg <= 0:
+                continue
+
+            if maior_delta is None or hop.delta_rtt > maior_delta:
 
                 maior_delta = hop.delta_rtt
                 hop_maior_delta = hop
 
         return {
 
-            "maior_delta": round(maior_delta, 2),
+            "maior_delta": round(maior_delta or 0.0, 2),
 
             "hop": hop_maior_delta
 

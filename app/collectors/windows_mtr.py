@@ -28,17 +28,19 @@ class WindowsMTRCollector:
         self.ping = WindowsPing()
 
         #
-        # Cache da rota descoberta
+        # Cache da rota
         #
 
         self.route_cache = None
 
         self.destination_cache = None
 
+
     def run(self, destino: str, ciclos: int):
 
         #
-        # Descobre a rota apenas uma vez por destino
+        # Primeira execução:
+        # descobre toda a rota.
         #
 
         if (
@@ -51,12 +53,43 @@ class WindowsMTRCollector:
 
         ):
 
-            self.route_cache = self._discover_route(destino)
+            self.route_cache = self._discover_route(
+
+                destino
+
+            )
 
             self.destination_cache = destino
 
         #
-        # Coleta estatísticas ICMP de todos os hops
+        # Demais execuções:
+        # atualiza apenas os valores do tracert.
+        #
+
+        else:
+
+            rota_atual = self._discover_route(
+
+                destino
+
+            )
+
+            for antigo, novo in zip(
+
+                self.route_cache,
+
+                rota_atual
+
+            ):
+
+                antigo["ip"] = novo["ip"]
+                antigo["loss"] = novo["loss"]
+                antigo["avg"] = novo["avg"]
+                antigo["best"] = novo["best"]
+                antigo["worst"] = novo["worst"]
+
+        #
+        # Executa os pings
         #
 
         ping_results = self._collect_ping_results(
@@ -68,7 +101,7 @@ class WindowsMTRCollector:
         )
 
         #
-        # Constrói os objetos Hop
+        # Constrói os hops
         #
 
         hops = self._build_hops(
@@ -80,10 +113,14 @@ class WindowsMTRCollector:
         )
 
         #
-        # Classifica os hops
+        # Classificação lógica
         #
 
-        self.hop_classifier.classify(hops)
+        self.hop_classifier.classify(
+
+            hops
+
+        )
 
         return TraceResult(
 
@@ -94,10 +131,13 @@ class WindowsMTRCollector:
             hops=hops
 
         )
-
     def _discover_route(self, destino):
 
-        rota = self.tracert.run(destino)
+        rota = self.tracert.run(
+
+            destino
+
+        )
 
         if not rota:
 
@@ -108,25 +148,39 @@ class WindowsMTRCollector:
             )
 
         return rota
+
+
     def _collect_ping_results(self, rota, ciclos):
 
         resultados = {}
 
-        with ThreadPoolExecutor(max_workers=16) as executor:
+        with ThreadPoolExecutor(
+
+            max_workers=16
+
+        ) as executor:
 
             futures = {
 
                 executor.submit(
+
                     self.ping.run,
+
                     hop["ip"],
+
                     ciclos
+
                 ): hop["ip"]
 
                 for hop in rota
 
             }
 
-            for future in as_completed(futures):
+            for future in as_completed(
+
+                futures
+
+            ):
 
                 ip = futures[future]
 
@@ -161,9 +215,9 @@ class WindowsMTRCollector:
 
         hops = []
 
-        hop_anterior = None
+        ultimo_rtt_valido = None
 
-        for dados_hop in rota:
+        for indice, dados_hop in enumerate(rota):
 
             ip = dados_hop["ip"]
 
@@ -171,11 +225,73 @@ class WindowsMTRCollector:
 
             if estatisticas is None:
 
-                continue
+                estatisticas = {
 
-            avg = estatisticas["avg"]
+                    "loss": 100.0,
 
-            if hop_anterior is None:
+                    "sent": 0,
+
+                    "received": 0,
+
+                    "last": 0.0,
+
+                    "avg": 0.0,
+
+                    "best": 0.0,
+
+                    "worst": 0.0,
+
+                    "stdev": 0.0
+
+                }
+
+            #
+            # RTT medido pelo TRACERT
+            #
+
+            tracert_avg = float(
+
+                dados_hop.get(
+
+                    "avg",
+
+                    0.0
+
+                )
+
+            )
+
+            eh_gateway = indice == 0
+
+            hop_silencioso = (
+
+                dados_hop["loss"] == 100.0
+
+            )
+
+            #
+            # Δ RTT
+            #
+
+            eh_destino = indice == len(rota) - 1
+
+            #
+            # Δ RTT
+            #
+
+            if eh_gateway:
+
+                delta = 0.0
+
+            elif hop_silencioso:
+
+                delta = None
+
+            elif eh_destino:
+
+                delta = None
+
+            elif ultimo_rtt_valido is None:
 
                 delta = 0.0
 
@@ -183,12 +299,11 @@ class WindowsMTRCollector:
 
                 delta = round(
 
-                    avg - hop_anterior.avg,
+                    tracert_avg - ultimo_rtt_valido,
 
                     2
 
                 )
-
             info_asn = self.asn.lookup(ip)
 
             hop = Hop(
@@ -203,7 +318,9 @@ class WindowsMTRCollector:
 
                 delta_rtt=delta,
 
-                loss=estatisticas["loss"],
+                tracert_avg=tracert_avg,
+
+                loss=dados_hop["loss"],
 
                 sent=estatisticas["sent"],
 
@@ -218,10 +335,6 @@ class WindowsMTRCollector:
                 stdev=estatisticas["stdev"]
 
             )
-
-            #
-            # ASN
-            #
 
             if info_asn:
 
@@ -245,10 +358,6 @@ class WindowsMTRCollector:
 
                 hop.pais = info_asn["country"]
 
-            #
-            # Localização lógica
-            #
-
             hop.localizacao = self.location.classify(
 
                 hop
@@ -261,6 +370,13 @@ class WindowsMTRCollector:
 
             )
 
-            hop_anterior = hop
+            #
+            # Todo hop que possui RTT no tracert
+            # vira referência para o próximo Δ RTT.
+            #
+
+            if tracert_avg > 0:
+
+                ultimo_rtt_valido = tracert_avg
 
         return hops
