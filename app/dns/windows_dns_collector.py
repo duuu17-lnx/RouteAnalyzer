@@ -14,31 +14,30 @@ class WindowsDNSCollector:
         resultado.origem = dns["origem"]
         resultado.nome = dns["nome"]
 
-        #
-        # Resolve usando o DNS configurado no sistema
-        #
-
         if dns["ip"] is None:
 
             resultado.servidor = "Sistema"
 
             comando = [
-                "nslookup",
-                dominio
-            ]
 
-        #
-        # Resolve usando um DNS específico
-        #
+                "nslookup",
+
+                dominio
+
+            ]
 
         else:
 
             resultado.servidor = dns["ip"]
 
             comando = [
+
                 "nslookup",
+
                 dominio,
+
                 dns["ip"]
+
             ]
 
         inicio = time.perf_counter()
@@ -70,19 +69,15 @@ class WindowsDNSCollector:
             )
 
             saida = processo.stdout
-            #
-            # Verifica erros
-            #
-
             saida_upper = saida.upper()
+
+            #
+            # NXDOMAIN
+            #
 
             if (
 
                 "NON-EXISTENT DOMAIN" in saida_upper
-
-                or
-
-                "***" in saida_upper
 
                 or
 
@@ -92,10 +87,76 @@ class WindowsDNSCollector:
 
                 resultado.status = "NXDOMAIN"
 
+                resultado.erro = "O domínio informado não existe."
+
                 return resultado
 
             #
-            # Procura o último IPv4 retornado
+            # SERVFAIL
+            #
+
+            if "SERVFAIL" in saida_upper:
+
+                resultado.status = "SERVFAIL"
+
+                resultado.erro = "O servidor DNS retornou SERVFAIL."
+
+                return resultado
+
+            #
+            # REFUSED
+            #
+
+            if "REFUSED" in saida_upper:
+
+                resultado.status = "REFUSED"
+
+                resultado.erro = "O servidor DNS recusou a consulta."
+
+                return resultado
+
+            #
+            # Timeout
+            #
+
+            if (
+
+                "TIMED OUT" in saida_upper
+
+                or
+
+                "TIMEOUT" in saida_upper
+
+            ):
+
+                resultado.status = "Timeout"
+
+                resultado.erro = "O servidor DNS não respondeu."
+
+                return resultado
+
+            #
+            # Sem resposta
+            #
+
+            if (
+
+                "NO RESPONSE" in saida_upper
+
+                or
+
+                "NO SERVERS COULD BE REACHED" in saida_upper
+
+            ):
+
+                resultado.status = "Erro"
+
+                resultado.erro = "Nenhum servidor DNS respondeu."
+
+                return resultado
+
+            #
+            # Procura IPv4
             #
 
             ipv4 = re.findall(
@@ -105,10 +166,6 @@ class WindowsDNSCollector:
                 saida
 
             )
-
-            #
-            # Remove o IP do servidor DNS utilizado
-            #
 
             if dns["ip"]:
 
@@ -122,24 +179,29 @@ class WindowsDNSCollector:
 
                 ]
 
-            #
-            # Se encontrou resposta
-            #
-
             if ipv4:
 
                 resultado.resposta = ipv4[-1]
 
                 resultado.status = "OK"
 
-            else:
+                return resultado
 
-                resultado.status = "Erro"
+            #
+            # Erro desconhecido
+            #
+
+            resultado.status = "Erro"
+
+            resultado.erro = saida.strip()
 
             return resultado
+
         except subprocess.TimeoutExpired:
 
             resultado.status = "Timeout"
+
+            resultado.erro = "Tempo limite excedido."
 
             return resultado
 

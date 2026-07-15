@@ -1,10 +1,10 @@
 from datetime import datetime
-from pathlib import Path
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
-
 from reportlab.platypus import SimpleDocTemplate
+
+from app.utils.report_directory import ReportDirectory
 
 from app.exporters.pdf.styles import PDFStyles
 from app.exporters.pdf.header import PDFHeader
@@ -39,17 +39,7 @@ class PDFExporter:
         # Pasta de saída
         #
 
-        output = Path(
-
-            "output"
-
-        )
-
-        output.mkdir(
-
-            exist_ok=True
-
-        )
+        output = ReportDirectory.get_directory()
 
         #
         # Nome do arquivo

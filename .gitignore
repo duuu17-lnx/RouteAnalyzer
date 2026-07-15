@@ -25,6 +25,8 @@ dist/
 #
 
 output/
+reports/
+*.pdf
 .last_config
 
 #

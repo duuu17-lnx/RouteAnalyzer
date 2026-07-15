@@ -17,160 +17,245 @@ def main():
 
     config_manager = ConfigManager()
 
+    #
+    # Última análise executada
+    #
+
+    ultima_analise = None
+
     while True:
 
-        print()
-
-        print("=" * 92)
-        print("RouteAnalyzer".center(92))
-        print("=" * 92)
-        print()
-
-        print("Insira o destino da análise (IPv4 /32 ou domínio):")
-        print()
-
-        destino = input("> ").strip()
-
-        if not destino:
-
-            print("\nDestino inválido.\n")
-
-            continue
-
-        print()
+        opcao = menu.show()
 
         #
-        # Última configuração utilizada
+        # Diagnóstico MTR
         #
 
-        config = config_manager.load()
+        if opcao == "1":
 
-        if config:
+            print()
 
-            usar = config_manager.ask(config)
+            print("=" * 92)
+            print("RouteAnalyzer".center(92))
+            print("=" * 92)
+            print()
 
-            if not usar:
+            print("Insira o destino da análise (IPv4 /32 ou domínio):")
+            print()
+
+            destino = input("> ").strip()
+
+            if not destino:
+
+                print()
+
+                print("Destino inválido.")
+
+                input("\nPressione ENTER para retornar ao menu...")
+
+                continue
+
+            print()
+
+            config = config_manager.load()
+
+            if config:
+
+                usar = config_manager.ask(config)
+
+                if not usar:
+
+                    config = configurator.configure()
+
+                    config_manager.save(config)
+
+            else:
 
                 config = configurator.configure()
 
                 config_manager.save(config)
 
-        else:
+            print()
 
-            config = configurator.configure()
+            print("Executando análise...\n")
 
-            config_manager.save(config)
+            dados = runner.run(
 
-        print("\nExecutando análise...\n")
+                destino,
 
-        dados = runner.run(
+                config
 
-            destino,
+            )
 
-            config
-
-        )
-
-        if dados is None:
-
-            print("\nErro: não foi possível resolver o destino.")
-
-            continue
-
-        report.show(
-
-            resultado=dados["resultado"],
-
-            config=config,
-
-            latency=dados["latency"],
-
-            loss=dados["loss"],
-
-            tempo=dados["tempo"],
-
-            ips_consultados=dados["ips_consultados"]
-
-        )
-
-        #
-        # Menu principal
-        #
-
-        while True:
-
-            opcao = menu.show()
-
-            #
-            # Nova análise
-            #
-
-            if opcao == "1":
+            if dados is None:
 
                 print()
 
-                break
+                print("Erro: não foi possível resolver o destino.")
+
+                input("\nPressione ENTER para retornar ao menu...")
+
+                continue
+
+            report.show(
+
+                resultado=dados["resultado"],
+
+                config=config,
+
+                latency=dados["latency"],
+
+                loss=dados["loss"],
+
+                tempo=dados["tempo"],
+
+                ips_consultados=dados["ips_consultados"]
+
+            )
+
+            ultima_analise = {
+
+                "tipo": "mtr",
+
+                "dados": dados,
+
+                "config": config
+
+            }
+
+        #
+        # Diagnóstico de Aplicação
+        #
+
+        elif opcao == "2":
+
+            from app.application.application_diagnostic import ApplicationDiagnostic
+
+            resultado = ApplicationDiagnostic().execute()
+
+            if resultado is not None:
+
+                ultima_analise = resultado
+
+        #
+        # Exportar Relatório
+        #
+
+        elif opcao == "3":
+
+            if ultima_analise is None:
+
+                print()
+
+                print("=" * 92)
+                print("Exportar Relatório".center(92))
+                print("=" * 92)
+                print()
+
+                print("Nenhum diagnóstico foi executado nesta sessão.")
+
+                input("\nPressione ENTER para retornar ao menu...")
+
+                continue
 
             #
-            # Diagnóstico DNS
+            # Relatório MTR
             #
 
-            elif opcao == "2":
-
-                from app.dns.dns_diagnostic import DNSDiagnostic
-
-                DNSDiagnostic().execute()
-
-            #
-            # Exportação
-            #
-
-            elif opcao == "3":
+            if ultima_analise["tipo"] == "mtr":
 
                 from app.exporters.pdf_exporter import PDFExporter
 
                 arquivo = PDFExporter().export(
 
-                    resultado=dados["resultado"],
+                    resultado=ultima_analise["dados"]["resultado"],
 
-                    config=config,
+                    config=ultima_analise["config"],
 
-                    latency=dados["latency"],
+                    latency=ultima_analise["dados"]["latency"],
 
-                    loss=dados["loss"],
+                    loss=ultima_analise["dados"]["loss"],
 
-                    tempo=dados["tempo"],
+                    tempo=ultima_analise["dados"]["tempo"],
 
-                    ips_consultados=dados["ips_consultados"]
+                    ips_consultados=ultima_analise["dados"]["ips_consultados"]
 
                 )
 
-                print()
-
-                print("=" * 92)
-                print("Relatório exportado".center(92))
-                print("=" * 92)
-                print()
-
-                print(f"Arquivo: {arquivo}")
-
-                input("\nPressione ENTER para voltar ao menu...")
-
             #
-            # Sair
+            # Relatório Aplicação
             #
 
-            elif opcao == "0":
+            elif ultima_analise["tipo"] == "application":
 
-                print("\nEncerrando o RouteAnalyzer...\n")
+                from app.exporters.application_pdf_exporter import (
 
-                return
+                    ApplicationPDFExporter
+
+                )
+
+                arquivo = ApplicationPDFExporter().export(
+
+                    resultado=ultima_analise["resultado"],
+
+                    responsabilidade=ultima_analise["responsabilidade"],
+
+                    estatisticas=ultima_analise["estatisticas"]
+
+                )
 
             else:
 
-                print("\nOpção inválida.")
+                print()
 
-                input("\nPressione ENTER...")
+                print("Tipo de relatório desconhecido.")
+
+                input("\nPressione ENTER para retornar ao menu...")
+
+                continue
+
+            print()
+
+            print("=" * 92)
+            print("Relatório exportado".center(92))
+            print("=" * 92)
+            print()
+
+            print(f"Arquivo: {arquivo}")
+
+            input("\nPressione ENTER para retornar ao menu...")
+
+        #
+        # Acessar Relatórios
+        #
+
+        elif opcao == "4":
+
+            from app.utils.report_directory import ReportDirectory
+
+            ReportDirectory().open()
+
+        #
+        # Sair
+        #
+
+        elif opcao == "0":
+
+            print()
+
+            print("Encerrando o RouteAnalyzer...")
+
+            print()
+
+            return
+
+        else:
+
+            print()
+
+            print("Opção inválida.")
+
+            input("\nPressione ENTER para continuar...")
 
 
 if __name__ == "__main__":
