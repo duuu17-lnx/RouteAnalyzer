@@ -1,3 +1,4 @@
+import platform
 import subprocess
 from urllib.parse import urlparse
 
@@ -23,6 +24,20 @@ class ApplicationHTTP:
         resultado.url = url
 
         resultado.dominio = urlparse(url).hostname or ""
+
+        #
+        # Executável do curl
+        #
+
+        if platform.system() == "Windows":
+
+            curl = "curl.exe"
+            null_device = "NUL"
+
+        else:
+
+            curl = "curl"
+            null_device = "/dev/null"
 
         #
         # Informações retornadas pelo curl
@@ -59,7 +74,7 @@ class ApplicationHTTP:
 
         comando = [
 
-            "curl.exe",
+            curl,
 
             "--max-redirs",
 
@@ -81,7 +96,7 @@ class ApplicationHTTP:
 
             "-o",
 
-            "NUL",
+            null_device,
 
             "-w",
 
@@ -202,6 +217,7 @@ class ApplicationHTTP:
                 if chave == "RA_HTTP_CODE":
 
                     resultado.http_code = int(valor)
+
                 elif chave == "RA_REMOTE_IP":
 
                     resultado.ip = valor
@@ -375,6 +391,7 @@ class ApplicationHTTP:
                 ""
 
             )
+
         #
         # Detecta infraestrutura
         #
