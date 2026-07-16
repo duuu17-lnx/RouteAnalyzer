@@ -1,5 +1,49 @@
 class PerformanceAnalyzer:
 
+    DESCRICOES = {
+
+        "DNS": (
+
+            "resolução DNS",
+
+            "antes de chegar ao servidor"
+
+        ),
+
+        "TCP": (
+
+            "estabelecimento da conexão TCP",
+
+            "antes de chegar ao servidor"
+
+        ),
+
+        "TLS": (
+
+            "negociação TLS",
+
+            "antes de chegar ao servidor"
+
+        ),
+
+        "Aplicação": (
+
+            "processamento da aplicação",
+
+            "após chegar ao servidor"
+
+        ),
+
+        "Transferência": (
+
+            "transferência do conteúdo",
+
+            "após chegar ao servidor"
+
+        )
+
+    }
+
     def analyze(
 
         self,
@@ -88,9 +132,27 @@ class PerformanceAnalyzer:
 
         )
 
+        descricao, contexto = self.DESCRICOES.get(
+
+            etapa,
+
+            (
+
+                etapa.lower(),
+
+                ""
+
+            )
+
+        )
+
         return {
 
             "etapa": etapa,
+
+            "descricao": descricao,
+
+            "contexto": contexto,
 
             "tempo": tempo,
 

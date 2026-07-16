@@ -34,9 +34,8 @@ def main():
         if opcao == "1":
 
             print()
-
             print("=" * 92)
-            print("RouteAnalyzer".center(92))
+            print("Diagnóstico MTR".center(92))
             print("=" * 92)
             print()
 
@@ -143,14 +142,13 @@ def main():
 
         elif opcao == "3":
 
+            print()
+            print("=" * 92)
+            print("Exportar Relatório".center(92))
+            print("=" * 92)
+            print()
+
             if ultima_analise is None:
-
-                print()
-
-                print("=" * 92)
-                print("Exportar Relatório".center(92))
-                print("=" * 92)
-                print()
 
                 print("Nenhum diagnóstico foi executado nesta sessão.")
 
@@ -205,8 +203,6 @@ def main():
                 )
 
             else:
-
-                print()
 
                 print("Tipo de relatório desconhecido.")
 

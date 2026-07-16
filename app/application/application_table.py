@@ -294,46 +294,6 @@ class ApplicationTable:
 
         )
 
-        tabela.add_row(
-
-            "Tecnologia",
-
-            ultimo.tecnologia or "--"
-
-        )
-
-        tabela.add_row(
-
-            "Fabricante",
-
-            ultimo.fabricante or "--"
-
-        )
-
-        tabela.add_row(
-
-            "Produto",
-
-            ultimo.produto or "--"
-
-        )
-
-        tabela.add_row(
-
-            "Categoria",
-
-            ultimo.categoria or "--"
-
-        )
-
-        tabela.add_row(
-
-            "Content-Type",
-
-            ultimo.content_type or "--"
-
-        )
-
         #
         # Exibe a tabela
         #
@@ -343,6 +303,7 @@ class ApplicationTable:
             tabela
 
         )
+
         #
         # Responsabilidade
         #
@@ -478,7 +439,6 @@ class ApplicationTable:
                 "Nenhuma resposta HTTP válida foi obtida."
 
             )
-
         #
         # Distribuição HTTP (Destino Final)
         #
@@ -519,13 +479,6 @@ class ApplicationTable:
 
                 )
 
-        #
-        # Médias
-        #
-        # Temporariamente ocultadas.
-        # Serão reativadas na versão 2.0 após a
-        # implementação do resultado_final.
-        #
         #
         # Diagnóstico
         #

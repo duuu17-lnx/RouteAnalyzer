@@ -474,22 +474,4 @@ class ApplicationDiagnosis:
 
             )
 
-        #
-        # Redirecionamentos
-        #
-
-        if resultado.redirect:
-
-            diagnostico.append(
-
-                f"Foram realizados {resultado.redirects} redirecionamento(s) HTTP."
-
-            )
-
-            diagnostico.append(
-
-                f"O destino efetivo da navegação foi {ultimo.url}."
-
-            )
-
         return diagnostico
