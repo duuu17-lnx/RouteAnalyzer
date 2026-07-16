@@ -1,4 +1,5 @@
-from pathlib import Path
+from app.utils.app_paths import AppPaths
+
 import os
 import platform
 import subprocess
@@ -9,27 +10,7 @@ class ReportDirectory:
     @staticmethod
     def get_directory():
 
-        reports = (
-
-            Path(__file__)
-
-            .resolve()
-
-            .parents[2]
-
-            / "reports"
-
-        )
-
-        reports.mkdir(
-
-            parents=True,
-
-            exist_ok=True
-
-        )
-
-        return reports
+        return AppPaths.reports_dir()
 
     def open(self):
 
@@ -52,7 +33,7 @@ class ReportDirectory:
 
                 os.startfile(
 
-                    reports
+                    str(reports)
 
                 )
 

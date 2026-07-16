@@ -1,15 +1,12 @@
-from pathlib import Path
-
 from app.models.analysis_config import AnalysisConfig
+from app.utils.app_paths import AppPaths
 
 
 class ConfigManager:
 
-    FILE_NAME = ".last_config"
-
     def __init__(self):
 
-        self.file = Path(self.FILE_NAME)
+        self.file = AppPaths.config_file()
 
     def save(self, config):
 

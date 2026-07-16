@@ -38,19 +38,88 @@ class MTRCollector:
 
         ]
 
-        resultado = subprocess.run(
+        try:
 
-            comando,
+            resultado = subprocess.run(
 
-            capture_output=True,
+                comando,
 
-            text=True
+                capture_output=True,
 
-        )
+                text=True
+
+            )
+
+        except FileNotFoundError:
+
+            raise RuntimeError(
+
+                "O comando 'mtr' não foi encontrado neste sistema."
+
+            )
+
+        #
+        # MTR executou mas retornou erro
+        #
 
         if resultado.returncode != 0:
 
-            raise RuntimeError(resultado.stderr)
+            erro = (
+
+                resultado.stderr.strip()
+
+                or
+
+                resultado.stdout.strip()
+
+                or
+
+                "Erro desconhecido."
+
+            )
+
+            #
+            # Erros de ambiente (bibliotecas quebradas,
+            # symbol lookup, etc.)
+            #
+
+            if (
+
+                "symbol lookup error" in erro.lower()
+
+                or
+
+                "undefined symbol" in erro.lower()
+
+            ):
+
+                mensagem = (
+
+                    "\n"
+
+                    + "=" * 92 + "\n"
+
+                    + "Diagnóstico MTR".center(92) + "\n"
+
+                    + "=" * 92 + "\n\n"
+
+                    + "O diagnóstico não pôde ser iniciado porque o MTR instalado neste\n"
+
+                    + "computador apresentou falha e não conseguiu ser executado.\n\n"
+
+                    + "A falha ocorreu na instalação do MTR deste computador,\n"
+
+                    + "não no RouteAnalyzer.\n\n"
+
+                    + "Erro retornado pelo MTR:\n\n"
+
+                    + erro
+
+                )
+
+                raise RuntimeError(mensagem)
+
+            raise RuntimeError(erro)
 
         dados = json.loads(resultado.stdout)
 

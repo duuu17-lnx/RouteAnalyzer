@@ -9,7 +9,7 @@ from reportlab.platypus import (
 )
 
 from app.application.application_diagnosis import ApplicationDiagnosis
-from app.utils.report_directory import ReportDirectory
+from app.utils.app_paths import AppPaths
 
 
 class ApplicationPDFExporter:
@@ -30,7 +30,7 @@ class ApplicationPDFExporter:
         # Pasta de saída
         #
 
-        output = ReportDirectory.get_directory()
+        output = AppPaths.reports_dir()
 
         #
         # Nome do arquivo
@@ -153,6 +153,8 @@ class ApplicationPDFExporter:
                     )
 
                 )
+
+            )
 
         if ultimo is not resultado:
 

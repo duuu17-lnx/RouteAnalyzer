@@ -3,6 +3,7 @@ from app.reports.report import Report
 from app.utils.menu import Menu
 from app.utils.analysis_configurator import AnalysisConfigurator
 from app.utils.config_manager import ConfigManager
+from app.exceptions.tool_error import ToolError
 
 
 def main():
@@ -268,6 +269,16 @@ if __name__ == "__main__":
         print("Investigação cancelada pelo usuário.".center(92))
         print("=" * 92)
         print()
+
+    except ToolError as erro:
+
+        print()
+
+        print(str(erro))
+
+        print()
+
+        input("Pressione ENTER para retornar ao menu...")
 
     except Exception:
 

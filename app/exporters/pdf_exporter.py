@@ -4,7 +4,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate
 
-from app.utils.report_directory import ReportDirectory
+from app.utils.app_paths import AppPaths
 
 from app.exporters.pdf.styles import PDFStyles
 from app.exporters.pdf.header import PDFHeader
@@ -39,7 +39,7 @@ class PDFExporter:
         # Pasta de saída
         #
 
-        output = ReportDirectory.get_directory()
+        output = AppPaths.reports_dir()
 
         #
         # Nome do arquivo
