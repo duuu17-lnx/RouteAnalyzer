@@ -24,17 +24,14 @@ dist/
 # Saídas do RouteAnalyzer
 #
 
-output/
 reports/
 *.pdf
-.last_config
 
 #
 # Logs
 #
 
 *.log
-tracert_debug.txt
 
 #
 # Arquivos temporários do Windows

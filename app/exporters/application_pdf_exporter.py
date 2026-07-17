@@ -65,24 +65,6 @@ class ApplicationPDFExporter:
         story = []
 
         #
-        # Descobre o destino efetivo
-        #
-
-        ultimo = resultado
-
-        while getattr(
-
-            ultimo,
-
-            "redirect_result",
-
-            None
-
-        ):
-
-            ultimo = ultimo.redirect_result
-
-        #
         # Cabeçalho
         #
 
@@ -125,50 +107,6 @@ class ApplicationPDFExporter:
             )
 
         )
-
-        if resultado.redirect:
-
-            story.append(
-
-                Paragraph(
-
-                    f"<b>Redirecionamentos:</b> {resultado.redirects}",
-
-                    styles["BodyText"]
-
-                )
-
-            )
-
-            if resultado.location:
-
-                story.append(
-
-                    Paragraph(
-
-                        f"<b>Location:</b> {resultado.location}",
-
-                        styles["BodyText"]
-
-                    )
-
-                )
-
-            )
-
-        if ultimo is not resultado:
-
-            story.append(
-
-                Paragraph(
-
-                    f"<b>Destino Efetivo:</b> {ultimo.url}",
-
-                    styles["BodyText"]
-
-                )
-
-            )
 
         story.append(
 

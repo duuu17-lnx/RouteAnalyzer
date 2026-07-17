@@ -44,8 +44,6 @@ class WindowsTracert:
 
         hops = []
 
-        debug = []
-
         try:
 
             while True:
@@ -55,12 +53,6 @@ class WindowsTracert:
                 if not linha:
 
                     break
-
-                debug.append(
-
-                    linha
-
-                )
 
                 hop = self._parse_hop(
 
@@ -97,22 +89,6 @@ class WindowsTracert:
             except subprocess.TimeoutExpired:
 
                 processo.kill()
-
-            with open(
-
-                "tracert_debug.txt",
-
-                "w",
-
-                encoding="utf-8"
-
-            ) as arquivo:
-
-                arquivo.writelines(
-
-                    debug
-
-                )
 
         if not hops:
 
@@ -192,7 +168,8 @@ class WindowsTracert:
             }
 
         ip = ips[-1]
-                #
+
+        #
         # Tempos retornados pelo tracert
         #
 

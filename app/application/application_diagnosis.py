@@ -42,23 +42,25 @@ class ApplicationDiagnosis:
 
     ):
 
-        diagnostico = []
+        #
+        # Organização do diagnóstico
+        #
+
+        conectividade = []
+
+        desempenho = []
+
+        aplicacao = []
+
+        observacoes = []
+
+        detalhes = []
 
         #
-        # Resultado efetivo da requisição
+        # Resultado efetivo
         #
 
         ultimo = resultado.get_final()
-
-        #
-        # Quantidade de execuções
-        #
-
-        diagnostico.append(
-
-            f"Foram realizadas {estatisticas['execucoes']} requisições HTTP independentes."
-
-        )
 
         #
         # Nenhuma execução válida
@@ -66,7 +68,13 @@ class ApplicationDiagnosis:
 
         if estatisticas["validas"] == 0:
 
-            diagnostico.append(
+            detalhes.append(
+
+                f"Foram realizadas {estatisticas['execucoes']} requisições HTTP independentes."
+
+            )
+
+            detalhes.append(
 
                 "Nenhuma das requisições HTTP pôde ser concluída."
 
@@ -74,15 +82,21 @@ class ApplicationDiagnosis:
 
             if responsabilidade["DNS"] == "Falha":
 
-                diagnostico.append(
+                conectividade.append(
+
+                    "Há indícios de falha na resolução DNS."
+
+                )
+
+                detalhes.append(
 
                     "O domínio não pôde ser resolvido pelo resolvedor DNS utilizado."
 
                 )
 
-                diagnostico.append(
+                detalhes.append(
 
-                    "As etapas de conectividade TCP, TLS e aplicação não puderam ser avaliadas."
+                    "As etapas TCP, TLS e aplicação não puderam ser avaliadas."
 
                 )
 
@@ -94,13 +108,19 @@ class ApplicationDiagnosis:
 
             ):
 
-                diagnostico.append(
+                conectividade.append(
+
+                    "Há indícios de falha de conectividade entre a estação e o servidor remoto."
+
+                )
+
+                detalhes.append(
 
                     "Não foi possível estabelecer conectividade TCP com o servidor remoto."
 
                 )
 
-                diagnostico.append(
+                detalhes.append(
 
                     "As etapas TLS e aplicação não puderam ser avaliadas."
 
@@ -108,13 +128,19 @@ class ApplicationDiagnosis:
 
             elif responsabilidade["TLS"] == "Falha":
 
-                diagnostico.append(
+                conectividade.append(
+
+                    "Foi observada falha durante o estabelecimento da conexão segura (TLS)."
+
+                )
+
+                detalhes.append(
 
                     "A conexão TCP foi estabelecida, porém o handshake TLS falhou."
 
                 )
 
-                diagnostico.append(
+                detalhes.append(
 
                     "A aplicação não pôde ser avaliada."
 
@@ -122,21 +148,244 @@ class ApplicationDiagnosis:
 
             else:
 
-                diagnostico.append(
+                aplicacao.append(
 
                     "Não foi possível concluir o diagnóstico da aplicação."
 
                 )
 
-            return diagnostico
+            return (
+
+                conectividade
+
+                + desempenho
+
+                + aplicacao
+
+                + observacoes
+
+                + detalhes
+
+            )
 
         #
-        # Consistência
+        # Conclusão de conectividade
         #
+
+        if responsabilidade["DNS"] != "OK":
+
+            conectividade.append(
+
+                "Há indícios de falha na resolução DNS."
+
+            )
+
+        elif responsabilidade["Rede"] not in (
+
+            "OK",
+
+            "Não testada"
+
+        ):
+
+            conectividade.append(
+
+                "Há indícios de falha de conectividade entre a estação e o servidor remoto."
+
+            )
+
+        elif responsabilidade["TLS"] not in (
+
+            "OK",
+
+            "Não testado"
+
+        ):
+
+            conectividade.append(
+
+                "Foi observada falha durante o estabelecimento da conexão segura (TLS)."
+
+            )
+
+        else:
+
+            conectividade.append(
+
+                "Os testes realizados não indicam limitação de conectividade entre a estação e o servidor remoto."
+
+            )
+
+        #
+        # Conclusão de desempenho
+        #
+
+        desempenho_info = estatisticas.get(
+
+            "desempenho"
+
+        )
+
+        if desempenho_info:
+
+            etapa = desempenho_info.get(
+
+                "etapa",
+
+                ""
+
+            )
+
+            if etapa:
+
+                if etapa in (
+
+                    "DNS",
+
+                    "TCP",
+
+                    "TLS"
+
+                ):
+
+                    desempenho.append(
+
+                        "A maior parte do tempo da requisição foi consumida antes de chegar ao servidor (ANTES DE CHEGAR AO SERVIDOR)."
+
+                    )
+
+                else:
+
+                    desempenho.append(
+
+                        "A maior parte do tempo da requisição foi consumida durante a transferência (DEPOIS DE CHEGAR AO SERVIDOR)."
+
+                    )
+
+        if resultado.redirect:
+
+            observacoes.append(
+
+                "A análise de desempenho considera o recurso final obtido após todos os redirecionamentos HTTP."
+
+            )
+
+        #
+        # Conclusão da aplicação
+        #
+
+        status = responsabilidade["Aplicação"]
+        if status == "OK":
+
+            aplicacao.append(
+
+                "Não foram observados indícios de indisponibilidade da aplicação."
+
+            )
+
+            aplicacao.append(
+
+                "Não há indícios de falha na rede do provedor."
+
+            )
+
+        elif status == "Redirect":
+
+            aplicacao.append(
+
+                "Não foram observados indícios de indisponibilidade da aplicação."
+
+            )
+
+            aplicacao.append(
+
+                "Não há indícios de falha na rede do provedor."
+
+            )
+
+            observacoes.append(
+
+                "A URL solicitada realizou redirecionamento HTTP de forma esperada."
+
+            )
+
+            observacoes.append(
+
+                "O conteúdo foi entregue com sucesso pelo destino efetivo."
+
+            )
+
+        elif status == "Indisponível":
+
+            aplicacao.append(
+
+                "Há fortes indícios de indisponibilidade da aplicação remota."
+
+            )
+
+            detalhes.append(
+
+                "O servidor respondeu com HTTP 503 Service Unavailable."
+
+            )
+
+        elif status == "Restrição":
+
+            aplicacao.append(
+
+                "A conectividade ocorreu normalmente, porém o acesso foi negado pela aplicação."
+
+            )
+
+            detalhes.append(
+
+                "O servidor recusou a requisição (HTTP 403 Forbidden)."
+
+            )
+
+        elif status == "Recurso":
+
+            aplicacao.append(
+
+                "A conectividade ocorreu normalmente, porém o recurso solicitado não existe ou não está disponível."
+
+            )
+
+            detalhes.append(
+
+                "O recurso solicitado não foi encontrado (HTTP 404 Not Found)."
+
+            )
+
+        elif status == "Erro":
+
+            aplicacao.append(
+
+                "A aplicação respondeu com erro interno."
+
+            )
+
+        else:
+
+            aplicacao.append(
+
+                "A aplicação apresentou comportamento diferente do esperado."
+
+            )
+
+        #
+        # Detalhes técnicos
+        #
+
+        detalhes.append(
+
+            f"Foram realizadas {estatisticas['execucoes']} requisições HTTP independentes."
+
+        )
 
         if estatisticas["intermitencia"]:
 
-            diagnostico.append(
+            detalhes.append(
 
                 "Foi observado comportamento intermitente entre as execuções."
 
@@ -144,15 +393,11 @@ class ApplicationDiagnosis:
 
         else:
 
-            diagnostico.append(
+            detalhes.append(
 
                 "Todas as execuções apresentaram comportamento consistente."
 
             )
-
-        #
-        # HTTP ORIGINAL
-        #
 
         http_original = estatisticas.get(
 
@@ -188,7 +433,7 @@ class ApplicationDiagnosis:
 
                     texto += f" {descricao}"
 
-                diagnostico.append(
+                detalhes.append(
 
                     f"A URL informada respondeu {texto} em todas as {quantidade} execuções."
 
@@ -224,17 +469,13 @@ class ApplicationDiagnosis:
 
                     )
 
-                diagnostico.append(
+                detalhes.append(
 
                     "A URL original apresentou diferentes respostas HTTP "
 
                     f"({', '.join(respostas)})."
 
                 )
-
-        #
-        # HTTP FINAL
-        #
 
         http_final = estatisticas.get(
 
@@ -272,7 +513,7 @@ class ApplicationDiagnosis:
 
                 if http_final != http_original:
 
-                    diagnostico.append(
+                    detalhes.append(
 
                         f"Após os redirecionamentos, o destino final respondeu {texto} em todas as {quantidade} execuções."
 
@@ -308,7 +549,7 @@ class ApplicationDiagnosis:
 
                     )
 
-                diagnostico.append(
+                detalhes.append(
 
                     "O destino final apresentou diferentes respostas HTTP "
 
@@ -317,161 +558,19 @@ class ApplicationDiagnosis:
                 )
 
         #
-        # DNS
+        # Ordem final do diagnóstico
         #
 
-        if responsabilidade["DNS"] != "OK":
+        return (
 
-            diagnostico.append(
+            conectividade
 
-                "Há indícios de falha na resolução DNS."
+            + desempenho
 
-            )
+            + aplicacao
 
-            return diagnostico
+            + observacoes
 
-        #
-        # Rede
-        #
+            + detalhes
 
-        if responsabilidade["Rede"] not in (
-
-            "OK",
-
-            "Não testada"
-
-        ):
-
-            diagnostico.append(
-
-                "Há indícios de falha de conectividade entre a estação e o servidor remoto."
-
-            )
-
-            return diagnostico
-
-        #
-        # TLS
-        #
-
-        if responsabilidade["TLS"] not in (
-
-            "OK",
-
-            "Não testado"
-
-        ):
-
-            diagnostico.append(
-
-                "Foi observada falha durante o estabelecimento da conexão segura (TLS)."
-
-            )
-
-            return diagnostico
-
-        #
-        # Aplicação
-        #
-
-        status = responsabilidade["Aplicação"]
-
-        if status == "OK":
-
-            diagnostico.append(
-
-                "Não foram observados indícios de indisponibilidade da aplicação."
-
-            )
-
-            diagnostico.append(
-
-                "Não há indícios de falha na rede do provedor."
-
-            )
-
-        elif status == "Redirect":
-
-            diagnostico.append(
-
-                "A URL solicitada realizou redirecionamento HTTP de forma esperada."
-
-            )
-
-            diagnostico.append(
-
-                "O conteúdo foi entregue com sucesso pelo destino efetivo."
-
-            )
-
-            diagnostico.append(
-
-                "Não foram observados indícios de indisponibilidade da aplicação."
-
-            )
-
-            diagnostico.append(
-
-                "Não há indícios de falha na rede do provedor."
-
-            )
-
-        elif status == "Indisponível":
-
-            diagnostico.append(
-
-                "O servidor respondeu com HTTP 503 Service Unavailable."
-
-            )
-
-            diagnostico.append(
-
-                "Há fortes indícios de indisponibilidade da aplicação remota."
-
-            )
-
-        elif status == "Restrição":
-
-            diagnostico.append(
-
-                "O servidor recusou a requisição (HTTP 403 Forbidden)."
-
-            )
-
-            diagnostico.append(
-
-                "A conectividade ocorreu normalmente, porém o acesso foi negado pela aplicação."
-
-            )
-
-        elif status == "Recurso":
-
-            diagnostico.append(
-
-                "O recurso solicitado não foi encontrado (HTTP 404 Not Found)."
-
-            )
-
-            diagnostico.append(
-
-                "A conectividade ocorreu normalmente, porém o recurso solicitado não existe ou não está disponível."
-
-            )
-
-        elif status == "Erro":
-
-            diagnostico.append(
-
-                "A aplicação respondeu com erro interno."
-
-            )
-
-        else:
-
-            diagnostico.append(
-
-                "A aplicação apresentou comportamento diferente do esperado."
-
-            )
-
-        return diagnostico
+        )
