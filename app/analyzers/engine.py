@@ -18,26 +18,6 @@ class AnalyzerEngine:
         correlacao = CorrelationAnalyzer().analyze(trace)
 
         #
-        # Backbone
-        #
-
-        if rota["backbone"]:
-
-            diagnosticos.append(
-                f"Backbone identificado: {rota['backbone'].empresa} ({rota['backbone'].asn})."
-            )
-
-        #
-        # Saída da rede
-        #
-
-        if rota["saida_provedor"]:
-
-            diagnosticos.append(
-                f"A saída da rede ocorreu no hop {rota['saida_provedor'].numero}."
-            )
-
-        #
         # IX
         #
 
@@ -55,26 +35,6 @@ class AnalyzerEngine:
 
             diagnosticos.append(
                 f"O trânsito foi realizado pela {rota['transito'].observacao}."
-            )
-
-        #
-        # Rede destino
-        #
-
-        if rota["rede_destino"]:
-
-            diagnosticos.append(
-                f"A entrada na rede {rota['rede_destino'].observacao} ocorreu no hop {rota['rede_destino'].numero}."
-            )
-
-        #
-        # RTT
-        #
-
-        if latency["hop"]:
-
-            diagnosticos.append(
-                f"Maior Δ RTT: +{latency['maior_delta']:.2f} ms (Hop {latency['hop'].numero})."
             )
 
         #
@@ -104,32 +64,6 @@ class AnalyzerEngine:
                     "Os hops subsequentes responderam normalmente, indicando limitação "
                     "das respostas ICMP, sem evidências de perda de encaminhamento."
                 )
-
-        #
-        # Perda real
-        #
-
-        if loss.hop:
-
-            if loss.persistent:
-
-                diagnosticos.append(
-                    f"A perda iniciou no hop {loss.hop.numero} e permaneceu até o destino."
-                )
-
-            else:
-
-                diagnosticos.append(
-                    f"A perda observada no hop {loss.hop.numero} não permaneceu até o destino."
-                )
-
-        #
-        # ASN
-        #
-
-        diagnosticos.append(
-            f"Foram percorridos {asn['total_asns']} ASNs."
-        )
 
         #
         # Correlação Inteligente

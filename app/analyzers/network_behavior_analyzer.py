@@ -13,80 +13,40 @@ class NetworkBehaviorAnalyzer:
         destino = hops[-1]
 
         #
-        # Se existe perda no destino,
-        # não podemos afirmar que seja apenas ICMP.
+        # Se o destino respondeu sem perda,
+        # não existe evidência de perda de encaminhamento.
+        # Todos os eventos intermediários passam a ser tratados
+        # apenas como comportamento ICMP.
         #
 
-        if destino.loss > 0:
+        if destino.loss == 0:
+
+            for hop in hops[:-1]:
+
+                if hop.loss == 0:
+                    continue
+
+                hop.perda_real = False
+                hop.icmp_filtrado = True
+
+                if hop.loss >= 100:
+
+                    hop.evento = "Hop Silencioso"
+                    hop.observacao = (
+                        "Equipamento não responde às sondas ICMP"
+                    )
+
+                else:
+
+                    hop.evento = "ICMP Filtrado"
+                    hop.observacao = (
+                        "Firewall / ICMP Rate Limit"
+                    )
+
             return
 
-        i = 0
-
-        while i < len(hops) - 1:
-
-            hop = hops[i]
-
-            #
-            # Hop sem perda
-            #
-
-            if hop.loss == 0:
-
-                i += 1
-                continue
-
-            #
-            # Localiza um bloco contínuo de perda
-            #
-
-            inicio = i
-            fim = i
-
-            while fim + 1 < len(hops):
-
-                if hops[fim + 1].loss == 0:
-                    break
-
-                fim += 1
-
-            #
-            # Verifica se existe perda após o bloco
-            #
-
-            propagou = False
-
-            for restante in hops[fim + 1:]:
-
-                if restante.loss > 0:
-
-                    propagou = True
-                    break
-
-            #
-            # Bloco compatível com ICMP filtrado
-            #
-
-            if not propagou:
-
-                for j in range(inicio, fim + 1):
-
-                    bloco = hops[j]
-
-                    bloco.perda_real = False
-                    bloco.icmp_filtrado = True
-
-                    if bloco.loss >= 100:
-
-                        bloco.evento = "Hop Silencioso"
-                        bloco.observacao = (
-                            "Equipamento não responde às sondas ICMP"
-                        )
-
-                    else:
-
-                        bloco.evento = "ICMP Filtrado"
-                        bloco.observacao = (
-                            "Firewall / ICMP Rate Limit"
-                        )
-
-            i = fim + 1
+        #
+        # Havendo perda no destino,
+        # a análise detalhada permanece para a etapa
+        # de correlação de perda.
+        #

@@ -9,6 +9,27 @@ class IntermittencyAnalyzer:
         trace.hop_mais_instavel = 0
         trace.hops_instaveis = []
 
+        #
+        # Sem hops
+        #
+
+        if not trace.hops:
+            return trace
+
+        #
+        # A intermitência da rota só existe se o destino
+        # também apresentar variação significativa.
+        #
+
+        destino = trace.hops[-1]
+
+        if destino.variacao_execucoes < self.LIMIAR_VARIACAO:
+            return trace
+
+        #
+        # Identifica quais hops também apresentaram variação.
+        #
+
         for hop in trace.hops:
 
             #
@@ -38,7 +59,6 @@ class IntermittencyAnalyzer:
                 if hop.variacao_execucoes > trace.maior_variacao:
 
                     trace.maior_variacao = hop.variacao_execucoes
-
                     trace.hop_mais_instavel = hop.numero
 
         return trace

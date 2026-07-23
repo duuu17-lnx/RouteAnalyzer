@@ -93,7 +93,12 @@ class Report:
                 "✓ Maior Δ RTT.......: Não identificado"
             )
 
-        if loss.hop:
+        #
+        # Mostrar informações de perda somente quando
+        # houver perda real de encaminhamento.
+        #
+
+        if loss.status == "ANOMALY" and loss.hop:
 
             print(
                 f"✓ Primeira perda....: Hop {loss.hop.numero}"
@@ -139,18 +144,13 @@ class Report:
         print("Conclusão")
         print("-" * 92)
 
-        print(
-            f"• A análise foi baseada em "
-            f"{config.execucoes} execuções "
-            f"independentes de "
-            f"{config.ciclos} ciclos."
-        )
-
         #
         # Diagnóstico de perda
         #
 
-        print(f"• {loss.diagnosis}")
+        if loss.diagnosis:
+
+            print(f"• {loss.diagnosis}")
 
         if loss.recommendation:
 

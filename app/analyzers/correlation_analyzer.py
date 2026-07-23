@@ -5,6 +5,13 @@ class CorrelationAnalyzer:
         conclusoes = []
 
         #
+        # Não há hops suficientes para correlação
+        #
+
+        if not trace.hops:
+            return conclusoes
+
+        #
         # Procura onde saiu do backbone
         #
 

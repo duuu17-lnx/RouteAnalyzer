@@ -1,10 +1,17 @@
 import ipaddress
+import re
 import socket
 
 
 class DNSCollector:
 
     def resolve(self, destino: str):
+
+        destino = destino.strip()
+
+        #
+        # IPv4 válido
+        #
 
         try:
 
@@ -15,6 +22,20 @@ class DNSCollector:
         except ValueError:
 
             pass
+
+        #
+        # Domínio válido
+        #
+
+        if not re.fullmatch(
+
+            r"^(?=.{1,253}$)(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$",
+
+            destino
+
+        ):
+
+            return None
 
         try:
 

@@ -91,7 +91,7 @@ def main():
 
                 print()
 
-                print("Erro: não foi possível resolver o destino.")
+                print("Erro: não foi possível obter uma rota válida para o destino.")
 
                 input("\nPressione ENTER para retornar ao menu...")
 

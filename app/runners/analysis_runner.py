@@ -74,6 +74,16 @@ class AnalysisRunner:
         resultado = ComparisonAnalyzer().analyze(multi)
 
         #
+        # Nenhuma rota válida foi obtida
+        #
+
+        if not resultado.hops:
+
+            processing.finish()
+
+            return None
+
+        #
         # Comportamento da rede
         #
 
