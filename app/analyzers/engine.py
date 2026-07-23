@@ -1,20 +1,20 @@
 from app.analyzers.asn_analyzer import ASNAnalyzer
 from app.analyzers.correlation_analyzer import CorrelationAnalyzer
-from app.analyzers.latency_analyzer import LatencyAnalyzer
-from app.analyzers.loss_analyzer import LossAnalyzer
 from app.analyzers.route_analyzer import RouteAnalyzer
 
 
 class AnalyzerEngine:
 
-    def analyze(self, trace):
+    def analyze(self, trace, latency, loss):
 
         diagnosticos = []
 
+        #
+        # Analyzers que ainda pertencem ao Engine
+        #
+
         rota = RouteAnalyzer().analyze(trace)
         asn = ASNAnalyzer().analyze(trace)
-        latencia = LatencyAnalyzer().analyze(trace)
-        perda = LossAnalyzer().analyze(trace)
         correlacao = CorrelationAnalyzer().analyze(trace)
 
         #
@@ -71,10 +71,10 @@ class AnalyzerEngine:
         # RTT
         #
 
-        if latencia["hop"]:
+        if latency["hop"]:
 
             diagnosticos.append(
-                f"Maior Δ RTT: +{latencia['maior_delta']:.2f} ms (Hop {latencia['hop'].numero})."
+                f"Maior Δ RTT: +{latency['maior_delta']:.2f} ms (Hop {latency['hop'].numero})."
             )
 
         #
@@ -109,18 +109,18 @@ class AnalyzerEngine:
         # Perda real
         #
 
-        if perda["hop"]:
+        if loss.hop:
 
-            if perda["persistente"]:
+            if loss.persistent:
 
                 diagnosticos.append(
-                    f"A perda iniciou no hop {perda['hop'].numero} e permaneceu até o destino."
+                    f"A perda iniciou no hop {loss.hop.numero} e permaneceu até o destino."
                 )
 
             else:
 
                 diagnosticos.append(
-                    f"A perda observada no hop {perda['hop'].numero} não permaneceu até o destino."
+                    f"A perda observada no hop {loss.hop.numero} não permaneceu até o destino."
                 )
 
         #

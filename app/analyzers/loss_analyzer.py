@@ -1,72 +1,82 @@
+from app.analyzers.loss_correlation import LossCorrelation
+from app.analyzers.loss_event_detector import LossEventDetector
+from app.builders.candidate_builder import CandidateBuilder
+from app.models.loss_analysis import LossAnalysis
+from app.scorers.loss_score import LossScore
+
+
 class LossAnalyzer:
 
-    def analyze(self, trace):
+    def analyze(
+        self,
+        trace,
+        config,
+    ):
 
-        primeiro_hop = None
+        detector = LossEventDetector()
 
-        persistente = False
-
-        #
-        # Procura a primeira perda REAL
-        #
-
-        for hop in trace.hops:
-
-            #
-            # Ignora ICMP filtrado
-            #
-
-            if not hop.perda_real:
-                continue
-
-            if hop.loss > 0:
-
-                primeiro_hop = hop
-
-                break
+        events = detector.detect(trace)
 
         #
-        # Não existe perda real
+        # Nenhum evento encontrado
         #
 
-        if primeiro_hop is None:
-
-            return {
-
-                "hop": None,
-
-                "persistente": False
-
-            }
+        if not events:
+            return LossAnalysis()
 
         #
-        # Verifica se o destino realmente respondeu
+        # Gera candidatos
         #
 
-        if trace.hops:
+        builder = CandidateBuilder()
 
-            ultimo_hop = trace.hops[-1]
+        candidates = builder.build_all(
+            trace=trace,
+            events=events,
+        )
+
+        if not candidates:
+            return LossAnalysis()
+
+        #
+        # Calcula score de todos os candidatos
+        #
+
+        scorer = LossScore()
+
+        best_candidate = None
+        best_result = None
+
+        for candidate in candidates:
+
+            result = scorer.calculate(
+                trace=trace,
+                candidate=candidate,
+            )
 
             if (
-
-                ultimo_hop.host == trace.destino
-
-                and
-
-                ultimo_hop.perda_real
-
-                and
-
-                ultimo_hop.loss >= primeiro_hop.loss
-
+                best_result is None
+                or result.score > best_result.score
             ):
+                best_result = result
+                best_candidate = candidate
 
-                persistente = True
+        #
+        # Segurança
+        #
 
-        return {
+        if best_candidate is None:
+            return LossAnalysis()
 
-            "hop": primeiro_hop,
+        #
+        # Correlação final
+        #
 
-            "persistente": persistente
+        correlator = LossCorrelation()
 
-        }
+        return correlator.analyze(
+            trace=trace,
+            config=config,
+            candidate=best_candidate,
+            score_result=best_result,
+        )

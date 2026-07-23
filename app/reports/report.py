@@ -34,7 +34,9 @@ class Report:
 
             resultado,
 
-            config
+            config,
+
+            loss
 
         )
 
@@ -91,15 +93,15 @@ class Report:
                 "✓ Maior Δ RTT.......: Não identificado"
             )
 
-        if loss["hop"]:
+        if loss.hop:
 
             print(
-                f"✓ Primeira perda....: Hop {loss['hop'].numero}"
+                f"✓ Primeira perda....: Hop {loss.hop.numero}"
             )
 
             print(
                 f"✓ Perda persistente.: "
-                f"{'Sim' if loss['persistente'] else 'Não'}"
+                f"{'Sim' if loss.persistent else 'Não'}"
             )
 
         if resultado.intermitencia:
@@ -126,7 +128,9 @@ class Report:
 
         resultado,
 
-        config
+        config,
+
+        loss
 
     ):
 
@@ -136,45 +140,49 @@ class Report:
         print("-" * 92)
 
         print(
-
             f"• A análise foi baseada em "
-
             f"{config.execucoes} execuções "
-
             f"independentes de "
-
             f"{config.ciclos} ciclos."
-
         )
+
+        #
+        # Diagnóstico de perda
+        #
+
+        print(f"• {loss.diagnosis}")
+
+        if loss.recommendation:
+
+            print(f"• {loss.recommendation}")
+
+        #
+        # Diagnósticos adicionais
+        #
 
         for item in resultado.diagnosticos:
 
             print(f"• {item}")
 
+        #
+        # Intermitência
+        #
+
         if resultado.intermitencia:
 
             print(
-
                 f"• Foi detectada intermitência "
-
                 f"no hop "
-
                 f"{resultado.hop_mais_instavel}, "
-
                 f"com variação máxima de "
-
                 f"{resultado.maior_variacao:.2f} ms."
-
             )
 
         else:
 
             print(
-
                 f"• As {config.execucoes} execuções "
-
                 f"apresentaram comportamento consistente."
-
             )
 
     def _mostrar_estatisticas(

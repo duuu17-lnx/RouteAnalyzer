@@ -28,7 +28,6 @@ class AnalysisRunner:
         ip_destino = dns.resolve(destino)
 
         if not ip_destino:
-
             return None
 
         ASNCollector.clear_cache()
@@ -41,52 +40,62 @@ class AnalysisRunner:
 
         multi = MultiTraceResult()
 
+        #
+        # Coleta
+        #
+
         for i in range(config.execucoes):
 
             progress.show(
-
                 atual=i + 1,
-
                 total=config.execucoes,
-
                 destino=destino,
-
                 config=config
-
             )
 
             trace = collector.run(
-
                 destino,
-
                 ciclos=config.ciclos
-
             )
 
             multi.add(trace)
 
         print()
-
         print("✓ Coleta concluída com sucesso.")
 
         processing.start()
+
+        #
+        # Comparação
+        #
 
         processing.step("Comparando execuções")
 
         resultado = ComparisonAnalyzer().analyze(multi)
 
+        #
+        # Comportamento da rede
+        #
+
         processing.step("Analisando comportamento da rede")
 
         NetworkBehaviorAnalyzer().analyze(resultado)
+
+        #
+        # Intermitência
+        #
 
         processing.step("Detectando intermitência")
 
         IntermittencyAnalyzer().analyze(resultado)
 
+        #
+        # ASN destino
+        #
+
         processing.step("Identificando ASN do destino")
 
         resultado.destino = destino
-
         resultado.destino_ip = ip_destino
 
         asn = ASNCollector().lookup(ip_destino)
@@ -94,24 +103,38 @@ class AnalysisRunner:
         if asn:
 
             resultado.destino_asn = str(asn["asn"])
-
             resultado.destino_empresa = asn["description"]
-
             resultado.destino_pais = asn["country"]
-
             resultado.destino_prefixo = asn["prefix"]
+
+        #
+        # Análises independentes
+        #
 
         processing.step("Calculando latência")
 
-        latency = LatencyAnalyzer().analyze(resultado)
+        latency = LatencyAnalyzer().analyze(
+            resultado
+        )
 
         processing.step("Calculando perda de pacotes")
 
-        loss = LossAnalyzer().analyze(resultado)
+        loss = LossAnalyzer().analyze(
+            resultado,
+            config
+        )
+
+        #
+        # Diagnóstico Final
+        #
 
         processing.step("Gerando diagnóstico")
 
-        resultado.diagnosticos = AnalyzerEngine().analyze(resultado)
+        resultado.diagnosticos = AnalyzerEngine().analyze(
+            trace=resultado,
+            latency=latency,
+            loss=loss
+        )
 
         processing.step("Finalizando relatório")
 
