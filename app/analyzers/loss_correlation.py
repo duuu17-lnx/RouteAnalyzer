@@ -18,6 +18,15 @@ class LossCorrelation:
         analysis = LossAnalysis()
 
         analysis.first_loss = candidate.start_hop
+
+        #
+        # Primeira perda considerada relevante (>=2%)
+        #
+
+        analysis.first_relevant_loss = self._find_first_relevant_loss(
+            trace
+        )
+
         analysis.first_persistent_loss = candidate.start_hop
         analysis.hop = candidate.start_hop
 
@@ -26,6 +35,15 @@ class LossCorrelation:
         analysis.score = score_result.score
         analysis.confidence = score_result.confidence
         analysis.evidencias = score_result.evidences
+
+        #
+        # Indica se a perda foi considerada ruído estatístico.
+        #
+
+        statistical_noise = self._is_statistical_noise(
+            trace,
+            config,
+        )
 
         analysis.status = self._classify(
             trace=trace,
@@ -48,9 +66,18 @@ class LossCorrelation:
 
         elif analysis.status == self.NO_ANOMALY:
 
-            analysis.diagnosis = (
-                "Não foram encontradas evidências de perda real de encaminhamento."
-            )
+            if statistical_noise:
+
+                analysis.diagnosis = (
+                    "Foi observada perda residual compatível com ruído estatístico. "
+                    "Não foram encontradas evidências de degradação do encaminhamento."
+                )
+
+            else:
+
+                analysis.diagnosis = (
+                    "Não foram encontradas evidências de perda real de encaminhamento."
+                )
 
             analysis.recommendation = None
 
@@ -63,7 +90,7 @@ class LossCorrelation:
             if self._is_advanced(config):
 
                 analysis.recommendation = (
-                    "Recomenda-se repetir a coleta em outro momento para validar o comportamento observado."
+                    "Recomenda-se repetir a análise avançada para validar o comportamento observado."
                 )
 
             else:
@@ -88,10 +115,17 @@ class LossCorrelation:
         score_result,
     ):
 
-        #
-        # Primeiro verifica se existem evidências suficientes
-        # para afirmar uma anomalia.
-        #
+        if self._is_statistical_noise(
+            trace,
+            config,
+        ):
+            return self.NO_ANOMALY
+
+        if self._is_advanced_inconclusive(
+            trace,
+            config,
+        ):
+            return self.INCONCLUSIVE
 
         if self._is_anomaly(
             trace,
@@ -100,20 +134,11 @@ class LossCorrelation:
         ):
             return self.ANOMALY
 
-        #
-        # Depois verifica se existem evidências suficientes
-        # para afirmar que NÃO existe perda.
-        #
-
         if self._is_no_anomaly(
             trace,
             candidate,
         ):
             return self.NO_ANOMALY
-
-        #
-        # Restante dos casos.
-        #
 
         return self.INCONCLUSIVE
 
@@ -132,33 +157,17 @@ class LossCorrelation:
 
         destino = trace.hops[-1]
 
-        #
-        # Destino sem perda.
-        #
-
         if destino.loss <= 0:
             return False
 
         if not destino.perda_real:
             return False
 
-        #
-        # Perda precisa persistir.
-        #
-
         if not candidate.persistent:
             return False
 
-        #
-        # Score muito baixo.
-        #
-
         if score_result.score < 40:
             return False
-
-        #
-        # Deve existir evidência positiva.
-        #
 
         if not score_result.has_positive_evidence:
             return False
@@ -179,28 +188,82 @@ class LossCorrelation:
 
         destino = trace.hops[-1]
 
-        #
-        # Sem perda no destino.
-        #
-
         if destino.loss <= 0:
             return True
 
-        #
-        # Existe perda apenas intermediária.
-        #
-
         if not destino.perda_real:
             return True
-
-        #
-        # Evento não persistente.
-        #
 
         if not candidate.persistent:
             return True
 
         return False
+
+    #
+    # ---------------------------------------------------------
+    # Ruído estatístico
+    # ---------------------------------------------------------
+    #
+
+    def _is_statistical_noise(
+        self,
+        trace,
+        config,
+    ):
+
+        if not self._is_advanced(config):
+            return False
+
+        destino = trace.hops[-1]
+
+        return (
+            destino.perda_real
+            and destino.loss > 0
+            and destino.loss <= 0.50
+        )
+
+    #
+    # ---------------------------------------------------------
+    # Faixa inconclusiva
+    # ---------------------------------------------------------
+    #
+
+    def _is_advanced_inconclusive(
+        self,
+        trace,
+        config,
+    ):
+
+        if not self._is_advanced(config):
+            return False
+
+        destino = trace.hops[-1]
+
+        return (
+            destino.perda_real
+            and 0.50 < destino.loss < 1.00
+        )
+
+    #
+    # ---------------------------------------------------------
+    # Primeira perda relevante
+    # ---------------------------------------------------------
+    #
+
+    def _find_first_relevant_loss(
+        self,
+        trace,
+    ):
+
+        for hop in trace.hops:
+
+            if (
+                hop.perda_real
+                and hop.loss >= 2.0
+            ):
+                return hop
+
+        return None
 
     #
     # ---------------------------------------------------------

@@ -14,6 +14,13 @@ class LossAnalysis:
     first_loss: Optional[Hop] = None
 
     #
+    # Primeira perda considerada relevante
+    # (>= 2%)
+    #
+
+    first_relevant_loss: Optional[Hop] = None
+
+    #
     # Primeira perda considerada persistente
     #
 

@@ -98,11 +98,14 @@ class Report:
         # houver perda real de encaminhamento.
         #
 
-        if loss.status == "ANOMALY" and loss.hop:
+        if loss.status == "ANOMALY":
 
-            print(
-                f"✓ Primeira perda....: Hop {loss.hop.numero}"
-            )
+            if loss.first_relevant_loss:
+
+                print(
+                    f"✓ Primeira perda relevante.: "
+                    f"Hop {loss.first_relevant_loss.numero}"
+                )
 
             print(
                 f"✓ Perda persistente.: "

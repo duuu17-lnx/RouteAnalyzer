@@ -17,10 +17,6 @@ class LossScore:
         self._score_icmp(result, candidate)
         self._score_isolated(result, candidate)
 
-        #
-        # Nunca permitir score negativo.
-        #
-
         result.score = max(0, result.score)
 
         return result
@@ -34,7 +30,6 @@ class LossScore:
     def _score_real_loss(self, result, candidate):
 
         if candidate.start_hop.perda_real:
-
             result.add(
                 "O evento iniciou com perda real.",
                 10
@@ -43,7 +38,6 @@ class LossScore:
     def _score_persistent_event(self, result, candidate):
 
         if candidate.event.persistent:
-
             result.add(
                 "O evento apresentou perda persistente.",
                 15
@@ -58,7 +52,6 @@ class LossScore:
             and ultimo.loss > 0
             and ultimo.loss >= candidate.event.avg_loss
         ):
-
             result.add(
                 "A perda permaneceu até o destino.",
                 15
@@ -119,7 +112,35 @@ class LossScore:
 
         avg = candidate.event.avg_loss
 
-        if avg >= 50:
+        #
+        # Perdas residuais.
+        #
+
+        if avg < 0.20:
+
+            result.add(
+                "A perda média observada é compatível com ruído estatístico.",
+                -25
+            )
+
+        elif avg < 0.50:
+
+            result.add(
+                "A perda média observada é residual.",
+                -10
+            )
+
+        #
+        # Entre 0,50% e 0,99% permanece neutro.
+        # A decisão será tomada pelo LossCorrelation
+        # conforme o perfil da análise.
+        #
+
+        elif avg < 1.00:
+
+            pass
+
+        elif avg >= 50:
 
             result.add(
                 "A perda média do evento foi muito elevada.",
